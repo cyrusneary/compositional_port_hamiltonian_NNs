@@ -1,0 +1,14 @@
+name: phmodeling
+channels:
+  - conda-forge
+dependencies:
+  - python=3.8
+  - numpy
+  - scipy
+  - matplotlib
+  - tqdm
+  - jax
+  - pip
+  - pip:
+    - git+https://github.com/deepmind/dm-haiku
+    - git+git://github.com/deepmind/optax.git
