@@ -32,7 +32,7 @@ node_save_path = os.path.join(os.path.dirname(
 # Create a container to save the experiment parameters, 
 # network details, network parameters, and results
 experiment = {
-    'experiment_name' : 'baseline node',
+    'experiment_name' : 'vanilla node',
 
     'experiment_setup' : {
         'num_training_steps' : 10000,
@@ -42,7 +42,7 @@ experiment = {
         'dt' : 0.01,
         'pen_l2_nn_params' : 0,
         'data_file_str' : os.path.join(dataset_path,
-                                    '2022-01-07-16-14-35.pkl'),
+                                    'spring_mass_2022-01-18-11-36-00.pkl'),
         'experiment_save_str' : save_path,
         'experiment_node_save_str' : node_save_path
     },
@@ -80,7 +80,8 @@ node = NODE(rng_key=rng_key,
             nn_setup_params=experiment['nn_setup_params'],
             pen_l2_nn_params=experiment['experiment_setup']['pen_l2_nn_params'],
             optimizer_name=experiment['optimizer_setup']['name'],
-            optimizer_settings=experiment['optimizer_setup'])
+            optimizer_settings=experiment['optimizer_setup'],
+            experiment_setup=experiment)
 
 # Load the training and testing data
 with open(experiment['experiment_setup']['data_file_str'], 'rb') as f:
@@ -109,10 +110,6 @@ node.set_testing_dataset(testing_data)
 node.train(experiment['experiment_setup']['num_training_steps'],
             experiment['experiment_setup']['minibatch_size'])
 
-experiment['nn_params'] = node.params
-experiment['optimizer_state'] = node.opt_state
-experiment['results'] = node.results
-
 # Save the node file
 node_file_name = datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S') + '_' + \
     experiment['experiment_name'].replace(' ', '_') + '.pkl'
@@ -123,26 +120,17 @@ node_save_file_str = os.path.join(
 node.save(node_save_file_str)
 experiment['experiment_setup']['node_save_file_str'] = node_save_file_str                   
 
-# Save the experiment container
-file_name = datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S') + '_' + \
-    experiment['experiment_name'].replace(' ', '_') + '.pkl'
-save_file_str = os.path.join(
-                    os.path.abspath(
-                        experiment['experiment_setup']['experiment_save_str']),
-                    file_name)
+# Re-load the neural ODE just to test save/load functionality
+node = NODE.load(experiment['experiment_setup']['node_save_file_str'])
 
-with open(save_file_str, 'wb') as f:
-    pickle.dump(experiment, f)
+print(node.experiment_setup['experiment_setup']['training_dataset_size'])
 
 fig = plt.figure(figsize=(10,10))
 ax = fig.add_subplot(111)
-ax.plot(experiment['results']['training_losses'].values(), color='blue')
-ax.plot(experiment['results']['testing_losses'].values(), color='red')
+ax.plot(node.results['training_losses'].values(), color='blue')
+ax.plot(node.results['testing_losses'].values(), color='red')
 ax.grid()
 plt.show()
-
-# Re-load the neural ODE just to test save/load functionality
-node = NODE.load(experiment['experiment_setup']['node_save_file_str'])
 
 # Generate a predicted trajectory
 fontsize = 15

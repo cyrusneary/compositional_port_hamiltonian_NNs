@@ -27,7 +27,8 @@ class PHNODE(NODE):
                 nn_setup_params : dict, 
                 pen_l2_nn_params : int = 1e-4,
                 optimizer_name : str = 'adam',
-                optimizer_settings : dict = {'learning_rate' : 1e-4}
+                optimizer_settings : dict = {'learning_rate' : 1e-4},
+                experiment_setup : dict = {},
                 ):
         """
         Constructor for the neural ODE.
@@ -56,6 +57,9 @@ class PHNODE(NODE):
             The name of the optimization method used to train the network.
         optimizer_settings :
             A dictionary containing the 
+        experiment_setup :
+            An optional dictionary containing useful information about the 
+            neural ODE's setup.
         """
         super().__init__(rng_key=rng_key,
                             output_dim=output_dim,
@@ -63,36 +67,8 @@ class PHNODE(NODE):
                             nn_setup_params=nn_setup_params,
                             pen_l2_nn_params=pen_l2_nn_params,
                             optimizer_name=optimizer_name,
-                            optimizer_settings=optimizer_settings)
-
-    def save(self, save_file_str : str):
-        """
-        Save the neural ODE object.
-
-        Parameters
-        ----------
-        save_file_str :
-            A string containing the entire path and file name at which 
-            to save the neural ODE object.
-        """
-        save_dict = {
-            'init_rng_key' : self.init_rng_key,
-            'rng_key' : self.rng_key,
-            'output_dim' : self.output_dim,
-            'dt' : self.dt,
-            'nn_setup_params' : self.nn_setup_params,
-            'pen_l2_nn_params' : self.pen_l2_nn_params,
-            'optimizer_name' : self.optimizer_name,
-            'optimizer_settings' : self.optimizer_settings,
-            'training_dataset' : self.training_dataset,
-            'testing_dataset' : self.testing_dataset,
-            'params' : self.params,
-            'opt_state' : self.opt_state,
-            'results' : self.results,
-        }
-
-        with open(save_file_str, 'wb') as f:
-            pickle.dump(save_dict, f)
+                            optimizer_settings=optimizer_settings,
+                            experiment_setup=experiment_setup)
 
     def load(file_str : str):
         """
@@ -112,7 +88,8 @@ class PHNODE(NODE):
                     nn_setup_params=load_dict['nn_setup_params'],
                     pen_l2_nn_params=load_dict['pen_l2_nn_params'],
                     optimizer_name=load_dict['optimizer_name'],
-                    optimizer_settings=load_dict['optimizer_settings'])
+                    optimizer_settings=load_dict['optimizer_settings'],
+                    experiment_setup=load_dict['experiment_setup'])
 
         node.init_rng_key = load_dict['init_rng_key']
         node.set_training_dataset(load_dict['training_dataset'])
@@ -171,12 +148,16 @@ class PHNODE(NODE):
 
             f_approximator = jax.vmap(f_approximator, in_axes=0, out_axes=0)
 
-            k1 = f_approximator(x)
-            k2 = f_approximator(x + self.dt/2 * k1)
-            k3 = f_approximator(x + self.dt/2 * k2)
-            k4 = f_approximator(x + self.dt * k3)
+            # k1 = f_approximator(x)
+            # k2 = f_approximator(x + self.dt/2 * k1)
+            # k3 = f_approximator(x + self.dt/2 * k2)
+            # k4 = f_approximator(x + self.dt * k3)
 
-            return x + self.dt/6 * (k1 + 2 * k2 + 2 * k3 + k4)
+            # return x + self.dt/6 * (k1 + 2 * k2 + 2 * k3 + k4)
+
+            t = jnp.array([0.0, self.dt])
+            out = odeint(f_approximator, x, t)
+            return out[-1,:]
 
         forward = jax.jit(forward)
 

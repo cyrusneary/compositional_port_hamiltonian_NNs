@@ -25,7 +25,8 @@ class NODE(object):
                 nn_setup_params : dict, 
                 pen_l2_nn_params : int = 1e-4,
                 optimizer_name : str = 'adam',
-                optimizer_settings : dict = {'learning_rate' : 1e-4}
+                optimizer_settings : dict = {'learning_rate' : 1e-4},
+                experiment_setup : dict = {},
                 ):
         """
         Constructor for the neural ODE.
@@ -54,6 +55,9 @@ class NODE(object):
             The name of the optimization method used to train the network.
         optimizer_settings :
             A dictionary containing the 
+        experiment_setup :
+            An optional dictionary containing useful information about the 
+            neural ODE's setup.
         """
         self._initial_setup(rng_key=rng_key,
                             output_dim=output_dim,
@@ -61,7 +65,8 @@ class NODE(object):
                             nn_setup_params=nn_setup_params,
                             pen_l2_nn_params=pen_l2_nn_params,
                             optimizer_name=optimizer_name,
-                            optimizer_settings=optimizer_settings)
+                            optimizer_settings=optimizer_settings,
+                            experiment_setup=experiment_setup)
 
         # Initialize the neural network ode.
         self.params, self.forward, self.loss, self.update = \
@@ -77,7 +82,8 @@ class NODE(object):
                         nn_setup_params : dict, 
                         pen_l2_nn_params : int,
                         optimizer_name : str,
-                        optimizer_settings : dict):
+                        optimizer_settings : dict,
+                        experiment_setup : dict):
         """
         Helper function for object initialization.
         """
@@ -94,6 +100,8 @@ class NODE(object):
         self.pen_l2_nn_params = pen_l2_nn_params
         self.optimizer_name = optimizer_name
         self.optimizer_settings = optimizer_settings
+
+        self.experiment_setup = experiment_setup
 
         self.results = {
             'training_losses' : {},
@@ -220,6 +228,7 @@ class NODE(object):
             'testing_dataset' : self.testing_dataset,
             'params' : self.params,
             'opt_state' : self.opt_state,
+            'experiment_setup' : self.experiment_setup,
             'results' : self.results,
         }
 
@@ -244,7 +253,8 @@ class NODE(object):
                     nn_setup_params=load_dict['nn_setup_params'],
                     pen_l2_nn_params=load_dict['pen_l2_nn_params'],
                     optimizer_name=load_dict['optimizer_name'],
-                    optimizer_settings=load_dict['optimizer_settings'])
+                    optimizer_settings=load_dict['optimizer_settings'],
+                    experiment_setup=load_dict['experiment_setup'])
 
         node.init_rng_key = load_dict['init_rng_key']
         node.set_training_dataset(load_dict['training_dataset'])
@@ -287,12 +297,16 @@ class NODE(object):
             def f_approximator(x, t=0):
                 return mlp_forward_pure.apply(params=params, x=x)
 
-            k1 = f_approximator(x)
-            k2 = f_approximator(x + self.dt/2 * k1)
-            k3 = f_approximator(x + self.dt/2 * k2)
-            k4 = f_approximator(x + self.dt * k3)
+            # k1 = f_approximator(x)
+            # k2 = f_approximator(x + self.dt/2 * k1)
+            # k3 = f_approximator(x + self.dt/2 * k2)
+            # k4 = f_approximator(x + self.dt * k3)
 
-            return x + self.dt/6 * (k1 + 2 * k2 + 2 * k3 + k4)
+            # return x + self.dt/6 * (k1 + 2 * k2 + 2 * k3 + k4)
+
+            t = jnp.array([0.0, self.dt])
+            out = odeint(f_approximator, x, t)
+            return out[-1,:]
 
         forward = jax.jit(forward)
 
