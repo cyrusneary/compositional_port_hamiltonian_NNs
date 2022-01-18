@@ -179,7 +179,7 @@ class MassSpring(object):
         if save_str is not None:
             assert os.path.isdir(save_str)
             save_path = os.path.join(os.path.abspath(save_str), 
-                            datetime.now().strftime('%Y-%m-%d-%H-%M-%S.pkl'))
+                            datetime.now().strftime('spring_mass_%Y-%m-%d-%H-%M-%S.pkl'))
             # jnp.save(save_path, dataset)
             with open(save_path, 'wb') as f:
                 pickle.dump(dataset, f)
