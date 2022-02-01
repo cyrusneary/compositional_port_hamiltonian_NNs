@@ -18,7 +18,7 @@ import pickle
 
 from neural_ode.neural_ode import NODE
 
-class PHNODE(NODE):
+class HNODE(NODE):
 
     def __init__(self,
                 rng_key : jax.random.PRNGKey, 
@@ -41,8 +41,8 @@ class PHNODE(NODE):
         model_name : 
             A name for the model of interest. This must be unique as it 
             is useful to load and save parameters of the model.
-        num_states : 
-            The number of state of the system.
+        output_dim : 
+            The desired output dimension of the network predictions.
         dt : 
             The amount of time between individual system datapoints.
         nn_setup_params : 
@@ -61,6 +61,9 @@ class PHNODE(NODE):
             An optional dictionary containing useful information about the 
             neural ODE's setup.
         """
+        self.dim_q = int(output_dim / 2)
+        self.dim_p = self.dim_q
+
         super().__init__(rng_key=rng_key,
                             output_dim=output_dim,
                             dt=dt,
@@ -82,7 +85,7 @@ class PHNODE(NODE):
         """
         load_dict = pickle.load(open(file_str, 'rb'))
 
-        node = PHNODE(rng_key=load_dict['rng_key'],
+        node = HNODE(rng_key=load_dict['rng_key'],
                     output_dim=load_dict['output_dim'],
                     dt=load_dict['dt'],
                     nn_setup_params=load_dict['nn_setup_params'],
@@ -118,44 +121,21 @@ class PHNODE(NODE):
         update :
             A function to update the parameters of the neural ODE.
         """
+        network_settings = self.nn_setup_params.copy()
+
+        if (not 'activation' in network_settings.keys()) or \
+            (network_settings['activation'] == 'relu'):
+            network_settings['activation'] = jax.nn.relu
+        elif (network_settings['activation'] == 'tanh'):
+            network_settings['activation'] = jax.nn.tanh
 
         def hamiltonian_network(x):
-            return hk.nets.MLP(**self.nn_setup_params)(x)
-            # out = x
-            # for layer_ind in range(len(self.nn_setup_params['output_sizes']) - 1):
-            #     hidden_layer_size = self.nn_setup_params['output_sizes'][layer_ind]
-            #     out = hk.Linear(output_size=hidden_layer_size)(out)
-            #     out = jax.nn.tanh(hk.Linear(output_size=hidden_layer_size)(out))
-            
-            # # Don't activate the last layer
-            # output_size = self.nn_setup_params['output_sizes'][-1]
-            # out = hk.Linear(output_size=output_size)(out)
-
-            # return out
+            return hk.nets.MLP(**network_settings)(x)
 
         hamiltonian_network_pure = hk.without_apply_rng(hk.transform(hamiltonian_network))
 
         self.rng_key, subkey = jax.random.split(self.rng_key)
         params = hamiltonian_network_pure.init(rng=subkey, x=jnp.zeros((self.output_dim,)))
-
-        def H(q, p, params):
-            x = jnp.concatenate((q, p), axis=-1)
-            return hamiltonian_network_pure.apply(params=params, x=x)[0]
-
-        # def f_approximator(params, x : jnp.ndarray, t=0):
-        #     """
-        #     The system dynamics formulated using Hamiltonian mechanics.
-        #     """
-        #     q, p = jnp.split(x, 2, -1)
-        #     dh_dq = jax.grad(H, argnums=0)(q, p, params)
-        #     dh_dp = jax.grad(H, argnums=1)(q, p, params)
-        #     dh = jnp.stack([dh_dq, dh_dp])
-            
-        #     J = jnp.array([[0.0, 1.0],[-1.0, 0.0]])
-        #     R = jnp.array([[0, 0], [0, 0.0]])
-        #     return jnp.matmul(J-R, dh).flatten()
-
-        # f_approximator = jax.vmap(f_approximator, in_axes=1, out_axes=0)
 
         def forward(params, x):
 
@@ -163,16 +143,12 @@ class PHNODE(NODE):
                 """
                 The system dynamics formulated using Hamiltonian mechanics.
                 """
-                q, p = jnp.split(x, 2, -1)
-                dh_dq = jax.grad(H, argnums=0)(q, p, params)
-                dh_dp = jax.grad(H, argnums=1)(q, p, params)
-                dh = jnp.stack([dh_dq, dh_dp])
+                H = lambda x : jnp.sum(hamiltonian_network_pure.apply(params=params, x=x))
+                dh = jax.vmap(jax.grad(H))(x)
                 
                 J = jnp.array([[0.0, 1.0],[-1.0, 0.0]])
                 R = jnp.array([[0, 0], [0, 0.0]])
-                return jnp.matmul(J-R, dh).flatten()
-
-            f_approximator = jax.vmap(f_approximator, in_axes=0, out_axes=0)
+                return jnp.matmul(J-R, dh.transpose()).transpose()
 
             k1 = f_approximator(x)
             k2 = f_approximator(x + self.dt/2 * k1)
@@ -181,17 +157,13 @@ class PHNODE(NODE):
 
             return x + self.dt/6 * (k1 + 2 * k2 + 2 * k3 + k4)
 
-            # t = jnp.array([0.0, self.dt])
-            # out = odeint(f_approximator, x, t)
-            # return out[-1,:]
-
         forward = jax.jit(forward)
 
         @jax.jit
         def loss(params, x, y):
             out = forward(params=params, x=x)
-            output_size = self.nn_setup_params['output_sizes'][-1]
-            num_datapoints = x.reshape(-1, output_size).shape[0]
+            num_datapoints = x.reshape(-1, self.output_dim).shape[0]
+            # data_loss = jnp.mean(jnp.linalg.norm((out - y), ord=2, axis=0))
             data_loss = jnp.sum((out - y)**2) / num_datapoints
             regularization_loss = self.pen_l2_nn_params * sum(jnp.sum(jnp.square(p)) 
                                     for p in jax.tree_leaves(params))
@@ -209,7 +181,7 @@ class PHNODE(NODE):
         self.forward = forward
         self.loss = loss
         self.update = update
-        self.H = H
+        self.hamiltonian_network = hamiltonian_network_pure
 
     def _init_optimizer(self, optimizer_name, optimizer_settings):
         if optimizer_name == 'adam':

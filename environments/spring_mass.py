@@ -40,7 +40,7 @@ class MassSpring(object):
                 random_seed=42,
                 m : jnp.float32 = 1, 
                 k : jnp.float32 = 1, 
-                b : jnp.float32 = 0.1,
+                b : jnp.float32 = 0.0,
                 x0 : jnp.float32 = 1,
                 ):
         """
@@ -311,14 +311,14 @@ class MassSpring(object):
         plt.show()
 
 def main():
-    env = MassSpring(dt=0.01, k=10, b=1.0)
+    env = MassSpring(dt=0.01, m=1., k=1., b=0.0)
 
     save_dir = (r'/home/cyrus/Documents/research/port_hamiltonian_modeling/'
                 'environments/simulated_data')
     t = time.time()
     dataset = env.gen_dataset(trajectory_num_steps=500, 
-                                num_training_trajectories=100, 
-                                num_testing_trajectories=20,
+                                num_training_trajectories=500, 
+                                num_testing_trajectories=100,
                                 save_str=save_dir)
     print(time.time() - t)
     traj = dataset['training_dataset'][10, 0, :]

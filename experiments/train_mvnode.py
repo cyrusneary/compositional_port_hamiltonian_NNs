@@ -16,7 +16,7 @@ from tqdm import tqdm
 from inspect import getsourcefile
 
 sys.path.append('..')
-from neural_ode.neural_ode import NODE
+from neural_ode.mv_node import MVNODE
 
 # Load the baseline experiment results
 dataset_path = os.path.join(os.path.dirname(
@@ -32,7 +32,7 @@ node_save_path = os.path.join(os.path.dirname(
 # Create a container to save the experiment parameters, 
 # network details, network parameters, and results
 experiment = {
-    'experiment_name' : 'vanilla node',
+    'experiment_name' : 'mass matrix potential energy node',
 
     'experiment_setup' : {
         'num_training_steps' : 10000,
@@ -41,16 +41,24 @@ experiment = {
         'num_states' : 2,
         'dt' : 0.01,
         'pen_l2_nn_params' : 0,
-        'data_file_str' : os.path.join(dataset_path,
-                                    'spring_mass_2022-01-31-15-14-41.pkl'),
+        'data_file_str' : os.path.join(dataset_path, 'spring_mass_2022-01-31-15-14-41.pkl'),
         'experiment_save_str' : save_path,
         'experiment_node_save_str' : node_save_path
     },
 
-    'nn_setup_params' : {
-        'output_sizes' : (8, 8, 2)
-    },
 
+    'nn_setup_params' : {
+        'inv_mass_matrix_nn_setup_params' : {
+            'output_sizes' : (32, 32, 1),
+            'activation' : 'tanh',
+        },
+
+        'potential_energy_nn_setup_params' : {
+            'output_sizes' : (32, 32, 1),
+            'activation' : 'tanh',
+        },
+    },
+    
     'nn_params' : {},
 
     'optimizer_setup' : {
@@ -74,7 +82,7 @@ experiment = {
 rng_key = jax.random.PRNGKey(experiment['experiment_setup']['random_seed'])
 
 # Instantiate the neual ODE
-node = NODE(rng_key=rng_key,
+node = MVNODE(rng_key=rng_key,
             output_dim=experiment['experiment_setup']['num_states'],
             dt=experiment['experiment_setup']['dt'],
             nn_setup_params=experiment['nn_setup_params'],
@@ -121,9 +129,7 @@ node.save(node_save_file_str)
 experiment['experiment_setup']['node_save_file_str'] = node_save_file_str                   
 
 # Re-load the neural ODE just to test save/load functionality
-node = NODE.load(experiment['experiment_setup']['node_save_file_str'])
-
-print(node.experiment_setup['experiment_setup']['training_dataset_size'])
+node = MVNODE.load(experiment['experiment_setup']['node_save_file_str'])
 
 fig = plt.figure(figsize=(10,10))
 ax = fig.add_subplot(111)

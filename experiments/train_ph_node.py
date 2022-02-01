@@ -39,16 +39,16 @@ experiment = {
         'minibatch_size' : 32,
         'random_seed' : 42,
         'num_states' : 2,
-        'dt' : 0.01,
+        'dt' : 0.1,
         'pen_l2_nn_params' : 0,
-        'data_file_str' : os.path.join(dataset_path,
-                                    'spring_mass_2022-01-18-11-36-00.pkl'),
+        # 'data_file_str' : os.path.join(dataset_path, 'spring_mass_2022-01-19-10-49-51.pkl'),
+        'data_file_str' : os.path.join(dataset_path, 'spring_mass_2022-01-21-12-14-49.pkl'),
         'experiment_save_str' : save_path,
         'experiment_node_save_str' : node_save_path
     },
 
     'nn_setup_params' : {
-        'output_sizes' : (8, 8, 1)
+        'output_sizes' : (128, 128, 1)
     },
 
     'nn_params' : {},

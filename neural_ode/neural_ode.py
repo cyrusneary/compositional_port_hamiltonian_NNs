@@ -69,8 +69,7 @@ class NODE(object):
                             experiment_setup=experiment_setup)
 
         # Initialize the neural network ode.
-        self.params, self.forward, self.loss, self.update = \
-            self._build_neural_ode()
+        self._build_neural_ode()
 
         # Initialize the optimizer used for training.
         self._init_optimizer(optimizer_name, self.optimizer_settings)
@@ -133,7 +132,7 @@ class NODE(object):
                 jax.random.choice(subkey, 
                     np.arange(0, self.training_dataset_size),
                         (minibatch_size,), 
-                        replace=False)
+                        replace=True)
 
             minibatch_in = self.training_dataset[0, minibatch_sample_indeces, :]
             minibatch_out = self.training_dataset[1, minibatch_sample_indeces, :]
@@ -297,25 +296,26 @@ class NODE(object):
             def f_approximator(x, t=0):
                 return mlp_forward_pure.apply(params=params, x=x)
 
-            # k1 = f_approximator(x)
-            # k2 = f_approximator(x + self.dt/2 * k1)
-            # k3 = f_approximator(x + self.dt/2 * k2)
-            # k4 = f_approximator(x + self.dt * k3)
+            k1 = f_approximator(x)
+            k2 = f_approximator(x + self.dt/2 * k1)
+            k3 = f_approximator(x + self.dt/2 * k2)
+            k4 = f_approximator(x + self.dt * k3)
 
-            # return x + self.dt/6 * (k1 + 2 * k2 + 2 * k3 + k4)
+            return x + self.dt/6 * (k1 + 2 * k2 + 2 * k3 + k4)
 
-            t = jnp.array([0.0, self.dt])
-            out = odeint(f_approximator, x, t)
-            return out[-1,:]
+            # t = jnp.array([0.0, self.dt])
+            # out = odeint(f_approximator, x, t)
+            # return out[-1,:]
 
         forward = jax.jit(forward)
 
+        output_size = self.nn_setup_params['output_sizes'][-1]
+
         @jax.jit
-        def loss(params, x, x_next):
+        def loss(params, x, y):
             out = forward(params=params, x=x)
-            output_size = self.nn_setup_params['output_sizes'][-1]
             num_datapoints = x.reshape(-1, output_size).shape[0]
-            data_loss = jnp.sum((out - x_next)**2) / num_datapoints
+            data_loss = jnp.sum((out - y)**2) / num_datapoints
             regularization_loss = self.pen_l2_nn_params * sum(jnp.sum(jnp.square(p)) 
                                     for p in jax.tree_leaves(params))
             total_loss = data_loss + regularization_loss
@@ -328,7 +328,10 @@ class NODE(object):
             new_params = optax.apply_updates(params, updates)
             return new_params, new_opt_state, loss_val
 
-        return params, forward, loss, update
+        self.params = params
+        self.forward = forward
+        self.loss = loss
+        self.update = update
 
     def _init_optimizer(self, optimizer_name, optimizer_settings):
         if optimizer_name == 'adam':
