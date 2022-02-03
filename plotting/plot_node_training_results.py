@@ -1,34 +1,22 @@
 import os, sys
 sys.path.append('..')
 
-from neural_ode.neural_ode import NODE
-from inspect import getsourcefile
-
 import matplotlib.pyplot as plt
 import numpy as np
 
-import pickle
+from common import load_config_file, load_dataset, load_model, load_metrics
 
-save_path = os.path.join(os.path.dirname(
-                            os.path.abspath(getsourcefile(lambda:0))), 
-                                '../experiments/experiment_outputs/')
-node_save_path = os.path.join(os.path.dirname(
-                            os.path.abspath(getsourcefile(lambda:0))), 
-                                '../experiments/saved_nodes/')
+sacred_run_index = 11
+sacred_save_path = os.path.abspath('../experiments/sacred_runs/')
 
-file_name = '2022-01-07-16-37-59_baseline_node.pkl'
-
-node_file_str = os.path.join(node_save_path, file_name)
-experiment_file_str = os.path.join(save_path, file_name)
-
-# re-load the neural ode and the experiment dictionary
-node = NODE.load(node_file_str)
-with open(experiment_file_str, 'rb') as f:
-    experiment = pickle.load(f)
+config = load_config_file(sacred_run_index, sacred_save_path)
+datasets = load_dataset(sacred_run_index, sacred_save_path)
+model, params = load_model(sacred_run_index, sacred_save_path)
+results = load_metrics(sacred_run_index, sacred_save_path)
 
 fig = plt.figure(figsize=(10,10))
 ax = fig.add_subplot(111)
-ax.plot(experiment['results']['training_losses'].values(), color='blue')
-ax.plot(experiment['results']['testing_losses'].values(), color='red')
+ax.plot(results['training.loss']['steps'], results['training.loss']['values'], color='blue')
+ax.plot(results['training.loss']['steps'], results['testing.loss']['values'], color='red')
 ax.grid()
 plt.show()

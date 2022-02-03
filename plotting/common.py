@@ -45,6 +45,12 @@ def load_model(sacred_run_id, sacred_save_path=None):
                         output_dim=model_setup['output_dim'],
                         dt=model_setup['dt'],
                         nn_setup_params=model_setup['nn_setup_params'])
+    elif model_setup['model_type'] == 'hnode':
+        from models.hamiltonian_node import HNODE
+        model = HNODE(rng_key=jax.random.PRNGKey(config['seed']),
+                        output_dim=model_setup['output_dim'],
+                        dt=model_setup['dt'],
+                        nn_setup_params=model_setup['nn_setup_params'])
     elif model_setup['model_type'] == 'mlp':
         from models.sacred_mlp import MLP
         model = MLP(rng_key=jax.random.PRNGKey(config['seed']),
