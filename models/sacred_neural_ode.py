@@ -64,12 +64,19 @@ class NODE(object):
         """
         trajectory = np.zeros((num_steps, initial_state.shape[0]))
         trajectory[0] = initial_state
-        next_state = initial_state
+
+        # next_state = initial_state
+        # for step in range(1, num_steps):
+        #     next_state = self.forward(params=params, x=next_state)
+        #     trajectory[step, :] = next_state
+
+        next_state = initial_state.reshape((1, len(initial_state)))
         for step in range(1, num_steps):
             next_state = self.forward(params=params, x=next_state)
-            trajectory[step, :] = next_state
-        return trajectory
+            trajectory[step, :] = next_state[0]
 
+        return trajectory
+        
     def _build_neural_ode(self):
         """ 
         This function builds a neural network to directly estimate future state 

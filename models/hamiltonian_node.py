@@ -16,7 +16,7 @@ from tqdm import tqdm
 
 import pickle
 
-from neural_ode.neural_ode import NODE
+from models.sacred_neural_ode import NODE
 
 class HNODE(NODE):
 
@@ -25,10 +25,6 @@ class HNODE(NODE):
                 output_dim : int, 
                 dt : float,
                 nn_setup_params : dict, 
-                pen_l2_nn_params : int = 1e-4,
-                optimizer_name : str = 'adam',
-                optimizer_settings : dict = {'learning_rate' : 1e-4},
-                experiment_setup : dict = {},
                 ):
         """
         Constructor for the neural ODE.
@@ -51,15 +47,6 @@ class HNODE(NODE):
             nn_setup_params = {'output_sizes' : , 'w_init' : , 
                                 'b_init' : , 'with_bias' : , 
                                 'activation' :, 'activate_final':}.
-        pen_l2_nn_params : 
-            The penalty coefficient applied to the l2 norm regularizer
-        optimizer_name :
-            The name of the optimization method used to train the network.
-        optimizer_settings :
-            A dictionary containing the 
-        experiment_setup :
-            An optional dictionary containing useful information about the 
-            neural ODE's setup.
         """
         self.dim_q = int(output_dim / 2)
         self.dim_p = self.dim_q
@@ -67,41 +54,7 @@ class HNODE(NODE):
         super().__init__(rng_key=rng_key,
                             output_dim=output_dim,
                             dt=dt,
-                            nn_setup_params=nn_setup_params,
-                            pen_l2_nn_params=pen_l2_nn_params,
-                            optimizer_name=optimizer_name,
-                            optimizer_settings=optimizer_settings,
-                            experiment_setup=experiment_setup)
-
-    def load(file_str : str):
-        """
-        Load a neural ODE from a file.
-
-        Parameters
-        ----------
-        file_str :
-            A string containing the entire path and file name from which
-            to load the neural ODE object.
-        """
-        load_dict = pickle.load(open(file_str, 'rb'))
-
-        node = HNODE(rng_key=load_dict['rng_key'],
-                    output_dim=load_dict['output_dim'],
-                    dt=load_dict['dt'],
-                    nn_setup_params=load_dict['nn_setup_params'],
-                    pen_l2_nn_params=load_dict['pen_l2_nn_params'],
-                    optimizer_name=load_dict['optimizer_name'],
-                    optimizer_settings=load_dict['optimizer_settings'],
-                    experiment_setup=load_dict['experiment_setup'])
-
-        node.init_rng_key = load_dict['init_rng_key']
-        node.set_training_dataset(load_dict['training_dataset'])
-        node.set_testing_dataset(load_dict['testing_dataset'])
-        node.params = load_dict['params']
-        node.opt_state = load_dict['opt_state']
-        node.results = load_dict['results']
-
-        return node
+                            nn_setup_params=nn_setup_params)
 
     def _build_neural_ode(self):
         """ 
@@ -135,7 +88,7 @@ class HNODE(NODE):
         hamiltonian_network_pure = hk.without_apply_rng(hk.transform(hamiltonian_network))
 
         self.rng_key, subkey = jax.random.split(self.rng_key)
-        params = hamiltonian_network_pure.init(rng=subkey, x=jnp.zeros((self.output_dim,)))
+        init_params = hamiltonian_network_pure.init(rng=subkey, x=jnp.zeros((self.output_dim,)))
 
         def forward(params, x):
 
@@ -159,34 +112,6 @@ class HNODE(NODE):
 
         forward = jax.jit(forward)
 
-        @jax.jit
-        def loss(params, x, y):
-            out = forward(params=params, x=x)
-            num_datapoints = x.reshape(-1, self.output_dim).shape[0]
-            # data_loss = jnp.mean(jnp.linalg.norm((out - y), ord=2, axis=0))
-            data_loss = jnp.sum((out - y)**2) / num_datapoints
-            regularization_loss = self.pen_l2_nn_params * sum(jnp.sum(jnp.square(p)) 
-                                    for p in jax.tree_leaves(params))
-            total_loss = data_loss + regularization_loss
-            return total_loss, total_loss
-
-        @partial(jax.jit, static_argnums=(0,))
-        def update(optimizer, params, opt_state, x, y):
-            grads, loss_val = jax.grad(loss, has_aux=True)(params, x, y)
-            updates, new_opt_state = optimizer.update(grads, opt_state, params)
-            new_params = optax.apply_updates(params, updates)
-            return new_params, new_opt_state, loss_val
-
-        self.params = params
+        self.init_params = init_params
         self.forward = forward
-        self.loss = loss
-        self.update = update
         self.hamiltonian_network = hamiltonian_network_pure
-
-    def _init_optimizer(self, optimizer_name, optimizer_settings):
-        if optimizer_name == 'adam':
-            self.optimizer = optax.adam(optimizer_settings['learning_rate'])
-            self.opt_state = self.optimizer.init(self.params)
-        # Only handling adam for now.
-        else:
-            pass
