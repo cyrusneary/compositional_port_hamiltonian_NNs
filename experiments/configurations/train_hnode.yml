@@ -1,9 +1,9 @@
-experiment_name : 'spring mass vanilla NODE'
+experiment_name : 'spring mass Hamiltonian NODE'
 dataset_setup : 
   dataset_file_name : 'Spring_Mass_2022-02-03-15-49-07.pkl'
   dataset_path : '../environments/simulated_data'
 model_setup:
-  model_type : 'node'
+  model_type : 'hnode'
   input_dim : 2
   output_dim: 2
   dt : 0.01
