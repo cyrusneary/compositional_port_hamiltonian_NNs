@@ -1,0 +1,19 @@
+experiment_name: 'regression with mlp'
+dataset_setup : 
+  dataset_file_name : 'noisy_linear_dataset.pkl'
+  dataset_path : '.'
+model_setup:
+    model_type: 'mlp'
+    input_dim: 1
+    output_dim: 1
+    nn_setup_params:
+        output_sizes: [64, 64, 1]
+        activation: 'relu'
+trainer_setup:
+    trainer_type: 'sgd'
+    num_training_steps: 2000
+    minibatch_size: 32
+    pen_l2_nn_params: 0
+optimizer_setup:
+    name: adam
+    learning_rate : !!float 1e-4
