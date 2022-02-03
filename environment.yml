@@ -8,7 +8,9 @@ dependencies:
   - matplotlib
   - tqdm
   - jax
+  - pyyaml
   - pip
   - pip:
     - git+https://github.com/deepmind/dm-haiku
     - git+git://github.com/deepmind/optax.git
+    - sacred
