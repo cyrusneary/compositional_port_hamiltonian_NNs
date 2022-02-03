@@ -15,9 +15,11 @@ from functools import partial
 import jax
 import jax.numpy as jnp
 
+from environment import Environment
+
 ###### Code to generate a dataset of double-pendulum trajectories ######
 
-class MassSpring(object):
+class MassSpring(Environment):
     """
     Object representing a damped mass spring system.
 
@@ -42,16 +44,13 @@ class MassSpring(object):
                 k : jnp.float32 = 1, 
                 b : jnp.float32 = 0.0,
                 x0 : jnp.float32 = 1,
+                name : str = 'Spring_Mass'
                 ):
         """
         Initialize the double-pendulum environment object.
         """
 
-        self.dt = dt
-
-        assert type(random_seed) is int
-        self._random_seed = random_seed
-        self._rng_key = jax.random.PRNGKey(random_seed)
+        super().__init__(dt=dt, random_seed=random_seed, name=name)
         
         self.m = m
         self.k = k
@@ -92,161 +91,162 @@ class MassSpring(object):
         R = jnp.array([[0, 0], [0, self.b]])
         return jnp.matmul(J - R, dh)
 
-    def gen_dataset(self,
-                    trajectory_num_steps : int = 500, 
-                    num_training_trajectories : int = 800, 
-                    num_testing_trajectories : int = 200,
-                    training_x0_init_lb : jnp.array=jnp.array([-0.5, -0.5]),
-                    training_x0_init_ub : jnp.array=jnp.array([0.5, 0.5]),
-                    testing_x0_init_lb : jnp.array=jnp.array([-0.5, -0.5]),
-                    testing_x0_init_ub : jnp.array=jnp.array([0.5, 0.5]),
-                    save_str=None
-                    ) -> dict:
-        """
-        Generate an entire dataset for training and testing.
+    # def gen_dataset(self,
+    #                 trajectory_num_steps : int = 500, 
+    #                 num_training_trajectories : int = 800, 
+    #                 num_testing_trajectories : int = 200,
+    #                 training_x0_init_lb : jnp.array=jnp.array([-0.5, -0.5]),
+    #                 training_x0_init_ub : jnp.array=jnp.array([0.5, 0.5]),
+    #                 testing_x0_init_lb : jnp.array=jnp.array([-0.5, -0.5]),
+    #                 testing_x0_init_ub : jnp.array=jnp.array([0.5, 0.5]),
+    #                 save_str=None
+    #                 ) -> dict:
+    #     """
+    #     Generate an entire dataset for training and testing.
 
-        Parameters
-        ----------
-        trajectory_num_steps : 
-            The number of timesteps to include in each trajectory of data.
-        num_trainingtrajectories: 
-            The total number of trajectories to include in the training dataset.
-        num_testing_trajectories : 
-            The total number of trajectories to include in the testing dataset.
-        training_x0_init_lb : 
-            Jax Numpy array representing the lower bound of possible initial 
-            system states when generating the training dataset.
-        training_x0_init_ub :
-            Jax Numpy array representing the upper bound of possible initial 
-            system states when generating the training dataset.
-        testing_x0_init_lb : 
-            Jax Numpy array representing the lower bound of possible initial 
-            system states when generating the testing dataset.
-        testing_x0_init_ub : 
-            Jax Numpy array representing the upper bound of possible initial 
-            system states when generating the testing dataset.
-        save_str :
-            A path string indicating the folder in which to save the dataset.
+    #     Parameters
+    #     ----------
+    #     trajectory_num_steps : 
+    #         The number of timesteps to include in each trajectory of data.
+    #     num_trainingtrajectories: 
+    #         The total number of trajectories to include in the training dataset.
+    #     num_testing_trajectories : 
+    #         The total number of trajectories to include in the testing dataset.
+    #     training_x0_init_lb : 
+    #         Jax Numpy array representing the lower bound of possible initial 
+    #         system states when generating the training dataset.
+    #     training_x0_init_ub :
+    #         Jax Numpy array representing the upper bound of possible initial 
+    #         system states when generating the training dataset.
+    #     testing_x0_init_lb : 
+    #         Jax Numpy array representing the lower bound of possible initial 
+    #         system states when generating the testing dataset.
+    #     testing_x0_init_ub : 
+    #         Jax Numpy array representing the upper bound of possible initial 
+    #         system states when generating the testing dataset.
+    #     save_str :
+    #         A path string indicating the folder in which to save the dataset.
 
-        Returns
-        -------
-        dataset :
-            Dictionary containing the generated trajectory data.
-        """
+    #     Returns
+    #     -------
+    #     dataset :
+    #         Dictionary containing the generated trajectory data.
+    #     """
 
-        dataset = {}
+    #     dataset = {}
 
-        # First generate the training dataset
-        init_state = self.sample_initial_point(training_x0_init_lb, 
-                                                training_x0_init_ub)
-        state, next_state = self.gen_trajectory(init_state, 
-                                                trajectory_num_steps=\
-                                                    trajectory_num_steps)
-        training_dataset = jnp.array([jnp.stack((state, next_state), axis=0)])
-        for traj_ind in range(1, num_training_trajectories):
-            init_state = self.sample_initial_point(training_x0_init_lb, 
-                                                    training_x0_init_ub)
-            state, next_state = self.gen_trajectory(init_state, 
-                                                    trajectory_num_steps=\
-                                                        trajectory_num_steps)
-            traj = jnp.array([jnp.stack((state, next_state), axis=0)])
-            training_dataset = jnp.concatenate((training_dataset, traj), axis=0)
-            if traj_ind % 10 == 0:
-                print('Generated trajectory number: {}'.format(traj_ind))
+    #     # First generate the training dataset
+    #     init_state = self.sample_initial_point(training_x0_init_lb, 
+    #                                             training_x0_init_ub)
+    #     state, next_state = self.gen_trajectory(init_state, 
+    #                                             trajectory_num_steps=\
+    #                                                 trajectory_num_steps)
+    #     training_dataset = jnp.array([jnp.stack((state, next_state), axis=0)])
+    #     for traj_ind in range(1, num_training_trajectories):
+    #         init_state = self.sample_initial_point(training_x0_init_lb, 
+    #                                                 training_x0_init_ub)
+    #         state, next_state = self.gen_trajectory(init_state, 
+    #                                                 trajectory_num_steps=\
+    #                                                     trajectory_num_steps)
+    #         traj = jnp.array([jnp.stack((state, next_state), axis=0)])
+    #         training_dataset = jnp.concatenate((training_dataset, traj), axis=0)
+    #         if traj_ind % 10 == 0:
+    #             print('Generated trajectory number: {}'.format(traj_ind))
 
-        dataset['training_dataset'] = training_dataset
+    #     dataset['training_dataset'] = training_dataset
 
-        # Now generate the testing dataset
-        init_state = self.sample_initial_point(testing_x0_init_lb, 
-                                                testing_x0_init_ub)
-        state, next_state = self.gen_trajectory(init_state, 
-                                                trajectory_num_steps=\
-                                                    trajectory_num_steps)
-        testing_dataset = jnp.array([jnp.stack((state, next_state), axis=0)])
-        for traj_ind in range(1, num_testing_trajectories):
-            init_state = self.sample_initial_point(testing_x0_init_lb, 
-                                                    testing_x0_init_ub)
-            state, next_state = self.gen_trajectory(init_state, 
-                                                    trajectory_num_steps=\
-                                                        trajectory_num_steps)
-            traj = jnp.array([jnp.stack((state, next_state), axis=0)])
-            testing_dataset = jnp.concatenate((testing_dataset, traj), axis=0)
-            if traj_ind % 10 == 0:
-                print('Generated trajectory number: {}'.format(traj_ind))
+    #     # Now generate the testing dataset
+    #     init_state = self.sample_initial_point(testing_x0_init_lb, 
+    #                                             testing_x0_init_ub)
+    #     state, next_state = self.gen_trajectory(init_state, 
+    #                                             trajectory_num_steps=\
+    #                                                 trajectory_num_steps)
+    #     testing_dataset = jnp.array([jnp.stack((state, next_state), axis=0)])
+    #     for traj_ind in range(1, num_testing_trajectories):
+    #         init_state = self.sample_initial_point(testing_x0_init_lb, 
+    #                                                 testing_x0_init_ub)
+    #         state, next_state = self.gen_trajectory(init_state, 
+    #                                                 trajectory_num_steps=\
+    #                                                     trajectory_num_steps)
+    #         traj = jnp.array([jnp.stack((state, next_state), axis=0)])
+    #         testing_dataset = jnp.concatenate((testing_dataset, traj), axis=0)
+    #         if traj_ind % 10 == 0:
+    #             print('Generated trajectory number: {}'.format(traj_ind))
 
-        dataset['testing_dataset'] = testing_dataset
+    #     dataset['testing_dataset'] = testing_dataset
 
-        if save_str is not None:
-            assert os.path.isdir(save_str)
-            save_path = os.path.join(os.path.abspath(save_str), 
-                            datetime.now().strftime('spring_mass_%Y-%m-%d-%H-%M-%S.pkl'))
-            # jnp.save(save_path, dataset)
-            with open(save_path, 'wb') as f:
-                pickle.dump(dataset, f)
+    #     if save_str is not None:
+    #         assert os.path.isdir(save_str)
+    #         save_path = os.path.join(os.path.abspath(save_str), 
+    #                         datetime.now().strftime('spring_mass_%Y-%m-%d-%H-%M-%S.pkl'))
+    #         # jnp.save(save_path, dataset)
+    #         with open(save_path, 'wb') as f:
+    #             pickle.dump(dataset, f)
 
-        return dataset
+    #     return dataset
 
-    @partial(jax.jit, static_argnums=(0,2))
-    def gen_trajectory(self, 
-                        init_state : jnp.ndarray,
-                        trajectory_num_steps : int = 500,
-                        ) -> tuple:
-        """
-        Generate an individual system trajectory from a random initial state.
+    # @partial(jax.jit, static_argnums=(0,2))
+    # def gen_trajectory(self, 
+    #                     init_state : jnp.ndarray,
+    #                     trajectory_num_steps : int = 500,
+    #                     ) -> tuple:
+    #     """
+    #     Generate an individual system trajectory from a random initial state.
 
-        Parameters
-        ----------
-        init_state :
-            Jax numpy array representing the initial state for the trajectory.
-        trajectory_num_steps : 
-            Number of timesteps to include in the trajectory.
+    #     Parameters
+    #     ----------
+    #     init_state :
+    #         Jax numpy array representing the initial state for the trajectory.
+    #     trajectory_num_steps : 
+    #         Number of timesteps to include in the trajectory.
 
-        Returns
-        -------
-        trajectory :
-            Tuple of numpy arrays. The arrays contain the same data, but 
-            have a time offset of 1 step.
-        """
-        tIndexes = jnp.linspace(0, 
-                                (trajectory_num_steps+1) * self.dt, 
-                                num=trajectory_num_steps+1, 
-                                endpoint=False, 
-                                dtype=jnp.float32)
-        xnextVal = odeint(self.hamiltonian_dynamics,
-                        init_state, 
-                        t=tIndexes, 
-                        rtol=1e-10, 
-                        atol=1e-10)
-        return xnextVal[:-1, :], xnextVal[1:, :]
+    #     Returns
+    #     -------
+    #     trajectory :
+    #         Tuple of numpy arrays. The arrays contain the same data, but 
+    #         have a time offset of 1 step.
+    #     """
+    #     tIndexes = jnp.linspace(0, 
+    #                             (trajectory_num_steps+1) * self.dt, 
+    #                             num=trajectory_num_steps+1, 
+    #                             endpoint=False, 
+    #                             dtype=jnp.float32)
+    #     xnextVal = odeint(self.hamiltonian_dynamics,
+    #                     init_state, 
+    #                     t=tIndexes, 
+    #                     rtol=1e-10, 
+    #                     atol=1e-10)
+    #     return xnextVal[:-1, :], xnextVal[1:, :]
 
-    def sample_initial_point(self, 
-                                x0_init_lb : jnp.ndarray, 
-                                x0_init_ub : jnp.ndarray) -> jnp.ndarray:
-        """
-        Sample a random initial point from the interval specified by 
-        x0_init_lb and x0_init_ub.
+    # def sample_initial_point(self, 
+    #                             x0_init_lb : jnp.ndarray, 
+    #                             x0_init_ub : jnp.ndarray) -> jnp.ndarray:
+    #     """
+    #     Sample a random initial point from the interval specified by 
+    #     x0_init_lb and x0_init_ub.
 
-        Parameters
-        ----------
-        x0_init_lb :
-            Jax array representing lower bounds on the randomly selected 
-            initial state.
-        x0_init_ub : 
-            Jax array representing upper bounds on the randomly selected 
-            initial state.
+    #     Parameters
+    #     ----------
+    #     x0_init_lb :
+    #         Jax array representing lower bounds on the randomly selected 
+    #         initial state.
+    #     x0_init_ub : 
+    #         Jax array representing upper bounds on the randomly selected 
+    #         initial state.
 
-        Returns
-        -------
-        x0val :
-            A Jax Numpy array representing the sampled initial state.
-        """
-        self._rng_key, subkey = jax.random.split(self._rng_key)
-        shape = x0_init_lb.shape
-        return jax.random.uniform(subkey, 
-                                    shape=shape, 
-                                    minval=x0_init_lb, 
-                                    maxval=x0_init_ub)
+    #     Returns
+    #     -------
+    #     x0val :
+    #         A Jax Numpy array representing the sampled initial state.
+    #     """
+    #     self._rng_key, subkey = jax.random.split(self._rng_key)
+    #     shape = x0_init_lb.shape
+    #     return jax.random.uniform(subkey, 
+    #                                 shape=shape, 
+    #                                 minval=x0_init_lb, 
+    #                                 maxval=x0_init_ub)
 
+    @partial(jax.jit, static_argnums=(0,))
     def f_analytical(self, 
                     state : np.ndarray, 
                     t: np.ndarray=None,
@@ -265,7 +265,7 @@ class MassSpring(object):
         """
         fig = plt.figure(figsize=(5,5))
 
-        T = np.arange(trajectory.shape[0]) * self.dt
+        T = np.arange(trajectory.shape[0]) * self._dt
 
         q = trajectory[:, 0]
         ax = fig.add_subplot(211)
@@ -290,7 +290,7 @@ class MassSpring(object):
         """
         fig = plt.figure(figsize=(7,4))
 
-        T = np.arange(trajectory.shape[0]) * self.dt
+        T = np.arange(trajectory.shape[0]) * self._dt
 
         q = trajectory[:, 0]
         p = trajectory[:, 1]
@@ -321,7 +321,7 @@ def main():
                                 num_testing_trajectories=100,
                                 save_str=save_dir)
     print(time.time() - t)
-    traj = dataset['training_dataset'][10, 0, :]
+    traj = dataset['train_dataset']['inputs'][0, :, :]
     env.plot_trajectory(traj)
 
 if __name__ == "__main__":
