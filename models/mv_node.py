@@ -16,7 +16,7 @@ from tqdm import tqdm
 
 import pickle
 
-from neural_ode.neural_ode import NODE
+from models.neural_ode import NODE
 
 class MVNODE(NODE):
 
