@@ -1,7 +1,8 @@
 import os, sys
 sys.path.append('..')
 
-from neural_ode.port_hamiltonian_node import PHNODE
+from neural_ode.hamiltonian_node import HNODE
+from neural_ode.mv_node import MVNODE
 from inspect import getsourcefile
 
 import matplotlib.pyplot as plt
@@ -21,11 +22,13 @@ node_save_path = os.path.join(os.path.dirname(
 file_name = '2022-01-21-10-44-55_port_hamiltonian_node.pkl'
 file_name = '2022-01-21-12-07-12_port_hamiltonian_node.pkl'
 file_name = '2022-01-21-12-26-14_port_hamiltonian_node.pkl'
+file_name = '2022-01-31-17-56-23_hamiltonian_node.pkl'
+file_name = '2022-01-31-17-38-45_mass_matrix_potential_energy_node.pkl'
 
 node_file_str = os.path.join(node_save_path, file_name)
 
 # re-load the neural ode and the experiment dictionary
-node = PHNODE.load(node_file_str)
+node = MVNODE.load(node_file_str)
 
 with open(node.experiment_setup['experiment_setup']['data_file_str'], 'rb') as f:
     dataset = pickle.load(f)
@@ -56,7 +59,10 @@ ke_true = true_KE(q_true, p_true)
 pe_true = true_PE(q_true, p_true)
 h_true = true_H(q_true, p_true)
 
-H = jax.vmap(node.H, in_axes=(0,0,None), out_axes=0)
+def H(q, p, params):
+    x = jnp.stack((q,p), axis=-1)
+    return node.hamiltonian_network.apply(params=params, x=x)
+# H = jax.vmap(node.hamiltonian_network, in_axes=(0,0,None), out_axes=0)
 
 ke_pred = H(jnp.zeros((len(q_true), 1)), p_true.reshape(len(p_true), 1), node.params)
 pe_pred = H(q_true.reshape(len(q_true), 1), jnp.zeros((len(p_true), 1)), node.params)

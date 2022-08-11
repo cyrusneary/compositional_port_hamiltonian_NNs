@@ -1,3 +1,4 @@
+from ast import mod
 import os, sys
 sys.path.append('..')
 
@@ -42,12 +43,14 @@ def load_model(sacred_run_id, sacred_save_path=None):
     if model_setup['model_type'] == 'node':
         from models.sacred_neural_ode import NODE
         model = NODE(rng_key=jax.random.PRNGKey(config['seed']),
+                        input_dim=model_setup['input_dim'],
                         output_dim=model_setup['output_dim'],
                         dt=model_setup['dt'],
                         nn_setup_params=model_setup['nn_setup_params'])
     elif model_setup['model_type'] == 'hnode':
-        from models.hamiltonian_node import HNODE
+        from models.sacred_hamiltonian_neural_ode import HNODE
         model = HNODE(rng_key=jax.random.PRNGKey(config['seed']),
+                        input_dim=model_setup['input_dim'],
                         output_dim=model_setup['output_dim'],
                         dt=model_setup['dt'],
                         nn_setup_params=model_setup['nn_setup_params'])

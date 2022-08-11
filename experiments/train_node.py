@@ -16,7 +16,7 @@ from tqdm import tqdm
 from inspect import getsourcefile
 
 sys.path.append('..')
-from neural_ode.neural_ode import NODE
+from models.neural_ode import NODE
 
 # Load the baseline experiment results
 dataset_path = os.path.join(os.path.dirname(

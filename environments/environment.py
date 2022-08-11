@@ -12,8 +12,6 @@ import pickle
 import os
 from functools import partial
 
-###### Code to generate a dataset of double-pendulum trajectories ######
-
 class Environment(object):
     """
     Parent class representing a dynamical system for numerical simulation.

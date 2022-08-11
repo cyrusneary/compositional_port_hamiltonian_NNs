@@ -34,7 +34,7 @@ class Trainer(object):
         self.params = init_params
 
         self.trainer_setup = trainer_setup
-        self.pen_l2_nn_params = trainer_setup['pen_l2_nn_params']
+        self.pen_l2_nn_params = float(trainer_setup['pen_l2_nn_params'])
 
         self.results = {
             'training.loss' : {'steps' : [], 'values' : []},

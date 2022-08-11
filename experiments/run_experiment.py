@@ -23,6 +23,8 @@ ex.observers.append(FileStorageObserver('sacred_runs'))
 
 @ex.config
 def config():
+    # ex.add_config('configurations/train_mlp.yml')
+    # ex.add_config('configurations/train_neural_ode.yml')
     ex.add_config('configurations/train_hnode.yml')
 
 @ex.capture
@@ -56,12 +58,14 @@ def initialize_model(seed,
     if model_setup['model_type'] == 'node':
         from models.sacred_neural_ode import NODE
         model = NODE(rng_key=jax.random.PRNGKey(seed),
+                        input_dim=model_setup['input_dim'],
                         output_dim=model_setup['output_dim'],
                         dt=model_setup['dt'],
                         nn_setup_params=model_setup['nn_setup_params'])
     elif model_setup['model_type'] == 'hnode':
-        from models.hamiltonian_node import HNODE
+        from models.sacred_hamiltonian_neural_ode import HNODE
         model = HNODE(rng_key=jax.random.PRNGKey(seed),
+                        input_dim=model_setup['input_dim'],
                         output_dim=model_setup['output_dim'],
                         dt=model_setup['dt'],
                         nn_setup_params=model_setup['nn_setup_params'])

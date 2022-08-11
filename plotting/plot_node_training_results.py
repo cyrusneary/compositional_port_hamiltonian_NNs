@@ -6,7 +6,7 @@ import numpy as np
 
 from common import load_config_file, load_dataset, load_model, load_metrics
 
-sacred_run_index = 11
+sacred_run_index = 27
 sacred_save_path = os.path.abspath('../experiments/sacred_runs/')
 
 config = load_config_file(sacred_run_index, sacred_save_path)
