@@ -40,6 +40,8 @@ class HNODE(NODE):
                                 'activation' :, 'activate_final':}.
         """
 
+        assert nn_setup_params['output_sizes'][-1] == 1, "Hamiltonian network should output a scalar."
+
         super().__init__(
             rng_key=rng_key,
             input_dim=input_dim,
@@ -86,7 +88,19 @@ class HNODE(NODE):
         mlp_forward_pure = hk.without_apply_rng(hk.transform(mlp_forward))
 
         self.rng_key, subkey = jax.random.split(self.rng_key)
-        init_params = mlp_forward_pure.init(rng=subkey, x=jnp.zeros((self.output_dim,)))
+        init_params = mlp_forward_pure.init(rng=subkey, x=jnp.zeros((self.input_dim,)))
+
+        assert (self.input_dim % 2 == 0)
+        num_states = int(self.input_dim/2)
+
+        zeros_shape_num_states = jnp.zeros((num_states, num_states))
+        eye_shape_num_states = jnp.eye(num_states)
+        J_top = jnp.hstack([zeros_shape_num_states, eye_shape_num_states])
+        J_bottom = jnp.hstack([-eye_shape_num_states, zeros_shape_num_states])
+        J = jnp.vstack([J_top, J_bottom])
+        # J = jnp.array([[0.0, 1.0],[-1.0, 0.0]])
+        
+        R = jnp.zeros(J.shape)
 
         def forward(params, x):
 
@@ -94,11 +108,12 @@ class HNODE(NODE):
                 """
                 The system dynamics formulated using Hamiltonian mechanics.
                 """
+
+                # This sum is not a real sum. It is just a quick way to get the
+                # output of the Hamiltonian network into scalar form so that we
+                # can take its gradient.
                 H = lambda x : jnp.sum(mlp_forward_pure.apply(params=params, x=x))
                 dh = jax.vmap(jax.grad(H))(x)
-                
-                J = jnp.array([[0.0, 1.0],[-1.0, 0.0]])
-                R = jnp.array([[0, 0], [0, 0.0]])
                 return jnp.matmul(J-R, dh.transpose()).transpose()
 
             k1 = f_approximator(x)

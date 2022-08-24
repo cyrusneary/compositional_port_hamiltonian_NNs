@@ -1,14 +1,14 @@
-experiment_name : 'spring mass Hamiltonian NODE'
+experiment_name : 'Double spring mass Hamiltonian NODE'
 dataset_setup : 
-  dataset_file_name : 'Spring_Mass_2022-08-11-17-22-10.pkl'
+  dataset_file_name : 'Double_Spring_Mass_2022-08-24-11-23-49.pkl'
   dataset_path : '../environments/simulated_data'
 model_setup:
   model_type : 'hnode'
-  input_dim : 2
-  output_dim: 2
+  input_dim : 4
+  output_dim: 4
   dt : 0.01
   nn_setup_params:
-      output_sizes: [32, 32, 2]
+      output_sizes: [32, 32, 1]
       activation: 'tanh'
 trainer_setup:
   trainer_type: 'sgd'

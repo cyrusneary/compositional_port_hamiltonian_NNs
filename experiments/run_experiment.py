@@ -15,7 +15,9 @@ from sacred.observers import FileStorageObserver
 
 # experiment_name = 'MLP Linear Regression' 
 # experiment_name = 'Vanilla NODE Spring Mass' 
-experiment_name = 'Hamiltonian NODE Spring Mass' 
+experiment_name = 'Hamiltonian NODE Spring Mass'
+# experiment_name = 'NODE Double Spring Mass'
+# experiment_name = 'Hamiltonian NODE Double Spring Mass'
 
 ex = Experiment(experiment_name)
 
@@ -24,8 +26,10 @@ ex.observers.append(FileStorageObserver('sacred_runs'))
 @ex.config
 def config():
     # ex.add_config('configurations/train_mlp.yml')
-    # ex.add_config('configurations/train_neural_ode.yml')
-    ex.add_config('configurations/train_hnode.yml')
+    # ex.add_config('configurations/train_neural_ode_spring_mass.yml')
+    ex.add_config('configurations/train_hnode_spring_mass.yml')
+    # ex.add_config('configurations/train_neural_ode_double_spring_mass.yml')
+    # ex.add_config('configurations/train_hnode_double_spring_mass.yml')
 
 @ex.capture
 def load_dataset(dataset_setup, model_setup, _log):

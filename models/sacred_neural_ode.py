@@ -37,9 +37,6 @@ class NODE(object):
                                 'b_init' : , 'with_bias' : , 
                                 'activation' :, 'activate_final':}.
         """
-
-        assert input_dim == output_dim
-
         self.rng_key = rng_key
         self.init_rng_key = rng_key
         self.input_dim = input_dim

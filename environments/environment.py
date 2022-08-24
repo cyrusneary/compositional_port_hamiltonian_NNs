@@ -12,6 +12,8 @@ import pickle
 import os
 from functools import partial
 
+from tqdm import tqdm
+
 class Environment(object):
     """
     Parent class representing a dynamical system for numerical simulation.
@@ -103,7 +105,7 @@ class Environment(object):
         train_dataset['inputs'] = jnp.array([state])
         train_dataset['outputs'] = jnp.array([next_state])
         # training_dataset = jnp.array([jnp.stack((state, next_state), axis=0)])
-        for traj_ind in range(1, num_training_trajectories):
+        for traj_ind in tqdm(range(1, num_training_trajectories), desc='Generating training data'):
             self._rng_key, subkey = jax.random.split(self._rng_key)
             state, next_state = self.gen_random_trajectory(subkey, 
                                                     training_x0_init_lb, 
@@ -114,8 +116,8 @@ class Environment(object):
             train_dataset['outputs'] = jnp.concatenate((train_dataset['outputs'], jnp.array([next_state])), axis=0)
             # traj = jnp.array([jnp.stack((state, next_state), axis=0)])
             # training_dataset = jnp.concatenate((training_dataset, traj),axis=0)
-            if traj_ind % 10 == 0:
-                print('Generated trajectory number: {}'.format(traj_ind))
+            # if traj_ind % 10 == 0:
+            #     print('Generated trajectory number: {}'.format(traj_ind))
 
         dataset['train_dataset'] = train_dataset
 
@@ -129,7 +131,7 @@ class Environment(object):
         test_dataset['inputs'] = jnp.array([state])
         test_dataset['outputs'] = jnp.array([next_state])
         # testing_dataset = jnp.array([jnp.stack((state, next_state), axis=0)])
-        for traj_ind in range(1, num_testing_trajectories):
+        for traj_ind in tqdm(range(1, num_testing_trajectories), desc='Generating testing data'):
             self._rng_key, subkey = jax.random.split(self._rng_key)
             state, next_state = self.gen_random_trajectory(subkey, 
                                                     testing_x0_init_lb, 
@@ -140,8 +142,8 @@ class Environment(object):
             test_dataset['outputs'] = jnp.concatenate((test_dataset['outputs'], jnp.array([next_state])), axis=0)
             # traj = jnp.array([jnp.stack((state, next_state), axis=0)])
             # testing_dataset = jnp.concatenate((testing_dataset, traj), axis=0)
-            if traj_ind % 10 == 0:
-                print('Generated trajectory number: {}'.format(traj_ind))
+            # if traj_ind % 10 == 0:
+            #     print('Generated trajectory number: {}'.format(traj_ind))
 
         dataset['test_dataset'] = test_dataset
 
