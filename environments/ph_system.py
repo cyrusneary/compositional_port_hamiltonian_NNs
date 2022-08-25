@@ -1,10 +1,10 @@
 from copy import deepcopy
 import jax
 import jax.numpy as jnp
+from .environment import Environment
 
 import sys
 sys.path.append('..')
-from environments.environment import Environment
 
 class PHSystem(Environment):
 

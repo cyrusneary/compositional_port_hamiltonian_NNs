@@ -15,9 +15,10 @@ from sacred.observers import FileStorageObserver
 
 # experiment_name = 'MLP Linear Regression' 
 # experiment_name = 'Vanilla NODE Spring Mass' 
-experiment_name = 'Hamiltonian NODE Spring Mass'
+# experiment_name = 'Hamiltonian NODE Spring Mass'
 # experiment_name = 'NODE Double Spring Mass'
 # experiment_name = 'Hamiltonian NODE Double Spring Mass'
+experiment_name = 'Port Hamiltonian NODE Double Spring Mass'
 
 ex = Experiment(experiment_name)
 
@@ -27,9 +28,10 @@ ex.observers.append(FileStorageObserver('sacred_runs'))
 def config():
     # ex.add_config('configurations/train_mlp.yml')
     # ex.add_config('configurations/train_neural_ode_spring_mass.yml')
-    ex.add_config('configurations/train_hnode_spring_mass.yml')
+    # ex.add_config('configurations/train_hnode_spring_mass.yml')
     # ex.add_config('configurations/train_neural_ode_double_spring_mass.yml')
     # ex.add_config('configurations/train_hnode_double_spring_mass.yml')
+    ex.add_config('configurations/train_phnode_double_spring_mass.yml')
 
 @ex.capture
 def load_dataset(dataset_setup, model_setup, _log):
@@ -43,11 +45,15 @@ def load_dataset(dataset_setup, model_setup, _log):
         dataset = pickle.load(f)
 
     # Make sure the datasets are in the right input shape.
-    dataset['train_dataset']['inputs'] = dataset['train_dataset']['inputs'].reshape(-1, model_setup['input_dim'])
-    dataset['test_dataset']['inputs'] = dataset['test_dataset']['inputs'].reshape(-1, model_setup['input_dim'])
+    dataset['train_dataset']['inputs'] = \
+        dataset['train_dataset']['inputs'].reshape(-1, model_setup['input_dim'])
+    dataset['test_dataset']['inputs'] = \
+        dataset['test_dataset']['inputs'].reshape(-1, model_setup['input_dim'])
 
-    dataset['train_dataset']['outputs'] = dataset['train_dataset']['outputs'].reshape(-1, model_setup['output_dim'])
-    dataset['test_dataset']['outputs'] = dataset['test_dataset']['outputs'].reshape(-1, model_setup['output_dim'])
+    dataset['train_dataset']['outputs'] = \
+        dataset['train_dataset']['outputs'].reshape(-1, model_setup['output_dim'])
+    dataset['test_dataset']['outputs'] = \
+        dataset['test_dataset']['outputs'].reshape(-1, model_setup['output_dim'])
 
     _log.info('Train dataset input shape: {}'.format(dataset['train_dataset']['inputs'].shape))
     _log.info('Test dataset input shape: {}'.format(dataset['test_dataset']['inputs'].shape))
@@ -73,6 +79,11 @@ def initialize_model(seed,
                         output_dim=model_setup['output_dim'],
                         dt=model_setup['dt'],
                         nn_setup_params=model_setup['nn_setup_params'])
+    elif model_setup['model_type'] == 'phnode':
+        from models.ph_node import PHNODE
+        model = PHNODE(rng_key=jax.random.PRNGKey(seed),
+                        dt=model_setup['dt'],
+                        model_setup=model_setup)
     elif model_setup['model_type'] == 'mlp':
         from models.mlp import MLP
         model = MLP(rng_key=jax.random.PRNGKey(seed),
@@ -104,6 +115,7 @@ def experiment_main(experiment_name, trainer_setup, seed, _run, _log):
     ex.add_config({'datetime_experiment_name' : datetime_experiment_name})
 
     model = initialize_model()
+
     trainer = initialize_trainer(forward=model.forward, 
                                     init_params=model.init_params,
                                     train_dataset=train_dataset)

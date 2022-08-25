@@ -6,7 +6,7 @@ import numpy as np
 import jax.numpy as jnp
 import jax
 
-from models.ph_system import PHSystem
+from environments.ph_system import PHSystem
 
 from common import load_config_file, load_dataset, load_model, load_metrics
 
