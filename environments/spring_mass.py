@@ -92,10 +92,10 @@ class MassSpring(Environment):
         return jnp.matmul(J - R, dh)
 
     @partial(jax.jit, static_argnums=(0,))
-    def f_analytical(self, 
-                    state : np.ndarray, 
-                    t: np.ndarray=None,
-                    ) -> np.ndarray:
+    def dynamics_function(self, 
+                        state : np.ndarray, 
+                        t: np.ndarray=None,
+                        ) -> np.ndarray:
         """ 
         Full known dynamics
         """

@@ -59,10 +59,10 @@ class PendulumEnv(Environment):
         self._g = g
 
     #@partial(jax.jit, static_argnums=(0,))
-    def f_analytical(self, 
-                    state : jnp.ndarray, 
-                    t: jnp.ndarray=None,
-                    ) -> jnp.ndarray:
+    def dynamics_function(self, 
+                        state : jnp.ndarray, 
+                        t: jnp.ndarray=None,
+                        ) -> jnp.ndarray:
         """ 
         Pendulum dynamics full known dynamics
         """

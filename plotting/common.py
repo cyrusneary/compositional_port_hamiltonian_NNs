@@ -41,21 +41,21 @@ def load_model(sacred_run_id, sacred_save_path=None):
     model_setup = config['model_setup']
 
     if model_setup['model_type'] == 'node':
-        from models.sacred_neural_ode import NODE
+        from models.neural_ode import NODE
         model = NODE(rng_key=jax.random.PRNGKey(config['seed']),
                         input_dim=model_setup['input_dim'],
                         output_dim=model_setup['output_dim'],
                         dt=model_setup['dt'],
                         nn_setup_params=model_setup['nn_setup_params'])
     elif model_setup['model_type'] == 'hnode':
-        from models.sacred_hamiltonian_neural_ode import HNODE
+        from models.hamiltonian_neural_ode import HNODE
         model = HNODE(rng_key=jax.random.PRNGKey(config['seed']),
                         input_dim=model_setup['input_dim'],
                         output_dim=model_setup['output_dim'],
                         dt=model_setup['dt'],
                         nn_setup_params=model_setup['nn_setup_params'])
     elif model_setup['model_type'] == 'mlp':
-        from models.sacred_mlp import MLP
+        from models.mlp import MLP
         model = MLP(rng_key=jax.random.PRNGKey(config['seed']),
                 input_dim=model_setup['input_dim'],
                 output_dim=model_setup['output_dim'],

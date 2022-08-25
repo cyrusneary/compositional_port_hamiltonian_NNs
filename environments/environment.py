@@ -228,13 +228,13 @@ class Environment(object):
         Given an initial state and a set of time instant, compute a 
         trajectory of the system at each time in the set
         """
-        return odeint(self.f_analytical,
+        return odeint(self.dynamics_function,
                         initial_state, 
                         t=times, 
                         rtol=1e-10, 
                         atol=1e-10)
 
-    def f_analytical(self, 
+    def dynamics_function(self, 
                     state : jnp.ndarray, 
                     t: jnp.ndarray=None,
                     ) -> jnp.ndarray:

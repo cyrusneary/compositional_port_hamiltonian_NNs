@@ -7,7 +7,9 @@ from jax.experimental.ode import odeint
 
 from .common import get_params_struct
 
-class NODE(object):
+from .neural_ode import NODE
+
+class HNODE(NODE):
 
     def __init__(self,
                 rng_key : jax.random.PRNGKey,
@@ -27,7 +29,7 @@ class NODE(object):
         input_dim : 
             The input dimension of the system.
         output_dim : 
-            The output dimension of the system.
+            The number of state of the system.
         dt : 
             The amount of time between individual system datapoints.
         nn_setup_params : 
@@ -37,48 +39,21 @@ class NODE(object):
                                 'b_init' : , 'with_bias' : , 
                                 'activation' :, 'activate_final':}.
         """
-        self.rng_key = rng_key
-        self.init_rng_key = rng_key
-        self.input_dim = input_dim
-        self.output_dim = output_dim
-        self.dt = dt
-        self.nn_setup_params = nn_setup_params
+
+        assert nn_setup_params['output_sizes'][-1] == 1, "Hamiltonian network should output a scalar."
+
+        super().__init__(
+            rng_key=rng_key,
+            input_dim=input_dim,
+            output_dim=output_dim,
+            dt=dt,
+            nn_setup_params=nn_setup_params
+        )
 
         # Initialize the neural network ode.
         self._build_neural_ode()
         self.params_shapes, self.count, self.params_tree_struct = \
             get_params_struct(self.init_params)
-
-    def predict_trajectory(self,
-                            params,
-                            initial_state : np.ndarray,
-                            num_steps : int):
-        """
-        Predict the system trajectory from an initial state.
-        
-        Parameters
-        ----------
-        params :
-            An instantiation of the neural ODE parameters.
-        initial_state :
-            An array representing the system initial state.
-        num_steps : 
-            Number of steps to include in trajectory.
-        """
-        trajectory = np.zeros((num_steps, initial_state.shape[0]))
-        trajectory[0] = initial_state
-
-        # next_state = initial_state
-        # for step in range(1, num_steps):
-        #     next_state = self.forward(params=params, x=next_state)
-        #     trajectory[step, :] = next_state
-
-        next_state = initial_state.reshape((1, len(initial_state)))
-        for step in range(1, num_steps):
-            next_state = self.forward(params=params, x=next_state)
-            trajectory[step, :] = next_state[0]
-
-        return trajectory
         
     def _build_neural_ode(self):
         """ 
@@ -115,10 +90,31 @@ class NODE(object):
         self.rng_key, subkey = jax.random.split(self.rng_key)
         init_params = mlp_forward_pure.init(rng=subkey, x=jnp.zeros((self.input_dim,)))
 
+        assert (self.input_dim % 2 == 0)
+        num_states = int(self.input_dim/2)
+
+        zeros_shape_num_states = jnp.zeros((num_states, num_states))
+        eye_shape_num_states = jnp.eye(num_states)
+        J_top = jnp.hstack([zeros_shape_num_states, eye_shape_num_states])
+        J_bottom = jnp.hstack([-eye_shape_num_states, zeros_shape_num_states])
+        J = jnp.vstack([J_top, J_bottom])
+        # J = jnp.array([[0.0, 1.0],[-1.0, 0.0]])
+        
+        R = jnp.zeros(J.shape)
+
         def forward(params, x):
 
             def f_approximator(x, t=0):
-                return mlp_forward_pure.apply(params=params, x=x)
+                """
+                The system dynamics formulated using Hamiltonian mechanics.
+                """
+
+                # This sum is not a real sum. It is just a quick way to get the
+                # output of the Hamiltonian network into scalar form so that we
+                # can take its gradient.
+                H = lambda x : jnp.sum(mlp_forward_pure.apply(params=params, x=x))
+                dh = jax.vmap(jax.grad(H))(x)
+                return jnp.matmul(J-R, dh.transpose()).transpose()
 
             k1 = f_approximator(x)
             k2 = f_approximator(x + self.dt/2 * k1)
@@ -137,4 +133,4 @@ class NODE(object):
 
         self.init_params = init_params
         self.forward = forward
-        self.vector_field = mlp_forward_pure
+        self.hamiltonian_network = mlp_forward_pure

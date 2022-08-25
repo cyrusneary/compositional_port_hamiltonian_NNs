@@ -16,7 +16,7 @@ from tqdm import tqdm
 
 import pickle
 
-from models.sacred_neural_ode import NODE
+from models.neural_ode import NODE
 
 class HNODE(NODE):
 

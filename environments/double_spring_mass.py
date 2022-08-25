@@ -45,6 +45,8 @@ class DoubleMassSpring(Environment):
         The unstretched length of spring 2 [m].
     b2 :
         The damping coefficient on mass 2 [Ns/m].
+    name : 
+        The name of the environment.
     """
 
     def __init__(self, 
@@ -58,6 +60,7 @@ class DoubleMassSpring(Environment):
                 k2 : jnp.float32 = 1,
                 y2 : jnp.float32 = 1,
                 b2 : jnp.float32 = 0.0,
+                state_measure_spring_elongation=True,
                 name : str = 'Double_Spring_Mass'
                 ):
         """
@@ -76,11 +79,16 @@ class DoubleMassSpring(Environment):
         self.y2 = y2
         self.b2 = b2
 
+        self.state_measure_spring_elongation = state_measure_spring_elongation
+
     def PE(self, q, p):
         """
         The system's potential energy.
         """
-        return 1/2 * self.k1 * (q[0] - self.y1)**2 + 1/2 * self.k2 * ((q[1] - q[0]) - self.y2)**2
+        if self.state_measure_spring_elongation:
+            return 1/2 * self.k1 * q[0]**2 + 1/2 * self.k2 * q[1]**2
+        else:
+            return 1/2 * self.k1 * (q[0] - self.y1)**2 + 1/2 * self.k2 * ((q[1] - q[0]) - self.y2)**2
 
     def KE(self, q, p):
         """
@@ -108,12 +116,21 @@ class DoubleMassSpring(Environment):
         dh_dp = jax.grad(self.H, argnums=1)(q,p)
         dh = jnp.hstack([dh_dq, dh_dp]).transpose()
         
-        J = jnp.array([[0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0], [-1.0, 0.0, 0.0, 0.0], [0.0, -1.0, 0.0, 0.0]])
+        if self.state_measure_spring_elongation:
+            J = jnp.array([[0.0, 0.0, 1.0, 0.0], 
+                            [0.0, 0.0, -1.0, 1.0], 
+                            [-1.0, 1.0, 0.0, 0.0], 
+                            [0.0, -1.0, 0.0, 0.0]])
+        else:
+            J = jnp.array([[0.0, 0.0, 1.0, 0.0], 
+                            [0.0, 0.0, 0.0, 1.0], 
+                            [-1.0, 0.0, 0.0, 0.0], 
+                            [0.0, -1.0, 0.0, 0.0]])
         R = jnp.zeros(J.shape)
         return jnp.matmul(J - R, dh)
 
     @partial(jax.jit, static_argnums=(0,))
-    def f_analytical(self, 
+    def dynamics_function(self, 
                     state : np.ndarray, 
                     t: np.ndarray=None,
                     ) -> np.ndarray:
@@ -121,10 +138,16 @@ class DoubleMassSpring(Environment):
         Full known dynamics
         """
         q1, q2, p1, p2 = state
-        q1_dot = p1 / self.m1
-        q2_dot = p2 / self.m2
-        p1_dot = - (self.k1 * (q1 - self.y1) + self.k2 * (q1 + self.y2 - q2))
-        p2_dot = - (self.k2 * (q2 - q1 - self.y2))
+        if self.state_measure_spring_elongation:
+            q1_dot = p1 / self.m1
+            q2_dot = p2 / self.m2 - p1 / self.m1
+            p1_dot = - self.k1 * q1 + self.k2 * q2
+            p2_dot = - self.k2 * q2
+        else:
+            q1_dot = p1 / self.m1
+            q2_dot = p2 / self.m2
+            p1_dot = - (self.k1 * (q1 - self.y1) + self.k2 * (q1 + self.y2 - q2))
+            p2_dot = - (self.k2 * (q2 - q1 - self.y2))
         return jnp.stack([q1_dot, q2_dot, p1_dot, p2_dot])
 
     def plot_trajectory(self, trajectory, fontsize=15, linewidth=3):
@@ -135,8 +158,14 @@ class DoubleMassSpring(Environment):
 
         T = np.arange(trajectory.shape[0]) * self._dt
 
-        q1 = trajectory[:, 0]
-        q2 = trajectory[:, 1]
+        # We want to plot the positions of the masses, not the elongations of the springs
+        if self.state_measure_spring_elongation:
+            q1 = trajectory[:, 0] + self.y1 * jnp.ones(trajectory[:,0].shape)
+            q2 = trajectory[:, 1] + q1 + self.y2 * jnp.ones(trajectory[:,1].shape)
+        else:
+            q1 = trajectory[:, 0]
+            q2 = trajectory[:, 1]
+
         ax = fig.add_subplot(211)
         ax.plot(T, q1, linewidth=linewidth, color='blue', label='q1')
         ax.plot(T, q2, linewidth=linewidth, color='red', label='q2')
@@ -184,31 +213,34 @@ class DoubleMassSpring(Environment):
         plt.show()
 
 def main():
-    env = DoubleMassSpring(dt=0.01)
-
+    # env = DoubleMassSpring(dt=0.01, state_measure_spring_elongation=False)
     # init_state = jnp.array([1.0, 2.0, 1.0, 0.0])
-    # traj, _ = env.gen_trajectory(init_state=init_state, trajectory_num_steps=5000)
-    # env.plot_trajectory(traj)
-    # env.plot_energy(traj)
 
-    curdir = os.path.abspath(os.path.curdir)
-    save_dir = os.path.abspath(os.path.join(curdir, 'simulated_data'))
+    env = DoubleMassSpring(dt=0.01, state_measure_spring_elongation=True)
+    init_state = jnp.array([0.0, 0.0, 1.0, 0.0])
 
-    # save_dir = (r'/home/cyrus/Documents/research/port_hamiltonian_modeling/'
-    #             'environments/simulated_data')
-    t = time.time()
-    dataset = env.gen_dataset(trajectory_num_steps=500, 
-                                num_training_trajectories=500, 
-                                num_testing_trajectories=100,
-                                save_str=save_dir,
-                                training_x0_init_lb=jnp.array([0.8, 1.6, -0.5, -0.5]),
-                                training_x0_init_ub=jnp.array([1.2, 2.4, 0.5, 0.5]),
-                                testing_x0_init_lb=jnp.array([0.8, 1.6, -0.5, -0.5]),
-                                testing_x0_init_ub=jnp.array([1.2, 2.4, 0.5, 0.5]),)
-    print(time.time() - t)
-    traj = dataset['train_dataset']['inputs'][0, :, :]
+    traj, _ = env.gen_trajectory(init_state=init_state, trajectory_num_steps=5000)
     env.plot_trajectory(traj)
     env.plot_energy(traj)
+
+    # curdir = os.path.abspath(os.path.curdir)
+    # save_dir = os.path.abspath(os.path.join(curdir, 'simulated_data'))
+
+    # # save_dir = (r'/home/cyrus/Documents/research/port_hamiltonian_modeling/'
+    # #             'environments/simulated_data')
+    # t = time.time()
+    # dataset = env.gen_dataset(trajectory_num_steps=500, 
+    #                             num_training_trajectories=500, 
+    #                             num_testing_trajectories=100,
+    #                             save_str=save_dir,
+    #                             training_x0_init_lb=jnp.array([0.8, 1.6, -0.5, -0.5]),
+    #                             training_x0_init_ub=jnp.array([1.2, 2.4, 0.5, 0.5]),
+    #                             testing_x0_init_lb=jnp.array([0.8, 1.6, -0.5, -0.5]),
+    #                             testing_x0_init_ub=jnp.array([1.2, 2.4, 0.5, 0.5]),)
+    # print(time.time() - t)
+    # traj = dataset['train_dataset']['inputs'][0, :, :]
+    # env.plot_trajectory(traj)
+    # env.plot_energy(traj)
 
 if __name__ == "__main__":
     import time
