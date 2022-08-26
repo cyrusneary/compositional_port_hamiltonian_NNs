@@ -81,6 +81,20 @@ class DoubleMassSpring(Environment):
 
         self.state_measure_spring_elongation = state_measure_spring_elongation
 
+        self.config = {
+            'dt' : dt,
+            'm1' : m1,
+            'k1' : k1,
+            'y1' : y1,
+            'b1' : b1,
+            'm2' : m2,
+            'k2' : k2,
+            'y2' : y2,
+            'b2' : b2,
+            'state_measure_spring_elongation' : state_measure_spring_elongation,
+            'name' : name,
+        }
+
     def PE(self, q, p):
         """
         The system's potential energy.
@@ -219,28 +233,26 @@ def main():
     env = DoubleMassSpring(dt=0.01, state_measure_spring_elongation=True)
     init_state = jnp.array([0.0, 0.0, 1.0, 0.0])
 
-    traj, _ = env.gen_trajectory(init_state=init_state, trajectory_num_steps=5000)
-    env.plot_trajectory(traj)
-    env.plot_energy(traj)
-
-    # curdir = os.path.abspath(os.path.curdir)
-    # save_dir = os.path.abspath(os.path.join(curdir, 'simulated_data'))
-
-    # # save_dir = (r'/home/cyrus/Documents/research/port_hamiltonian_modeling/'
-    # #             'environments/simulated_data')
-    # t = time.time()
-    # dataset = env.gen_dataset(trajectory_num_steps=500, 
-    #                             num_training_trajectories=500, 
-    #                             num_testing_trajectories=100,
-    #                             save_str=save_dir,
-    #                             training_x0_init_lb=jnp.array([0.8, 1.6, -0.5, -0.5]),
-    #                             training_x0_init_ub=jnp.array([1.2, 2.4, 0.5, 0.5]),
-    #                             testing_x0_init_lb=jnp.array([0.8, 1.6, -0.5, -0.5]),
-    #                             testing_x0_init_ub=jnp.array([1.2, 2.4, 0.5, 0.5]),)
-    # print(time.time() - t)
-    # traj = dataset['train_dataset']['inputs'][0, :, :]
+    # traj, _ = env.gen_trajectory(init_state=init_state, trajectory_num_steps=5000)
     # env.plot_trajectory(traj)
     # env.plot_energy(traj)
+
+    curdir = os.path.abspath(os.path.curdir)
+    save_dir = os.path.abspath(os.path.join(curdir, 'simulated_data'))
+
+    # save_dir = (r'/home/cyrus/Documents/research/port_hamiltonian_modeling/'
+    #             'environments/simulated_data')
+    t = time.time()
+    dataset = env.gen_dataset(trajectory_num_steps=500, 
+                                num_trajectories=500, # 500 training, 100 testing
+                                x0_init_lb=jnp.array([0.8, 1.6, -0.5, -0.5]),
+                                x0_init_ub=jnp.array([1.2, 2.4, 0.5, 0.5]),
+                                save_str=save_dir)
+    print(time.time() - t)
+    print(dataset.keys())
+    traj = dataset['inputs'][0, :, :]
+    env.plot_trajectory(traj)
+    env.plot_energy(traj)
 
 if __name__ == "__main__":
     import time

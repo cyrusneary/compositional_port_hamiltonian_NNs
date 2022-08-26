@@ -56,6 +56,14 @@ class MassSpring(Environment):
         self.k = k
         self.b = b
 
+        self.config = {
+            'dt' : dt,
+            'm' : m,
+            'k' : k,
+            'b' : b,
+            'name' : name
+        }
+
     def PE(self, q, p):
         """
         The system's potential energy.
@@ -162,15 +170,12 @@ def main():
                 'environments/simulated_data')
     t = time.time()
     dataset = env.gen_dataset(trajectory_num_steps=500, 
-                                num_training_trajectories=500, 
-                                num_testing_trajectories=100,
-                                save_str=save_dir,
-                                training_x0_init_lb=jnp.array([-1.0, -1.0]),
-                                training_x0_init_ub=jnp.array([1.0, 1.0]),
-                                testing_x0_init_lb=jnp.array([-1.0, -1.0]),
-                                testing_x0_init_ub=jnp.array([1.0, 1.0]))
+                                num_trajectories=500, 
+                                x0_init_lb=jnp.array([-1.0, -1.0]),
+                                x0_init_ub=jnp.array([1.0, 1.0]),
+                                save_str=save_dir,)
     print(time.time() - t)
-    traj = dataset['train_dataset']['inputs'][0, :, :]
+    traj = dataset['inputs'][0, :, :]
     env.plot_trajectory(traj)
     env.plot_energy(traj)
 

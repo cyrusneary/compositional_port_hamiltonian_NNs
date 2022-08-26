@@ -45,6 +45,15 @@ class PHSystem(Environment):
         self.R = deepcopy(R)
         self.G = deepcopy(G)
 
+        self.config = {
+            'dt' : dt,
+            'H' : H,
+            'J' : J,
+            'R' : R,
+            'G' : G,
+            'name' : name,
+        }
+
     def dynamics_function(self, state, system_inputs):
         dh = jax.grad(self.H)(state)
         return jnp.matmul(self.J - self.R, dh.transpose()).transpose() #+ jnp.matmul(self.G, system_inputs)

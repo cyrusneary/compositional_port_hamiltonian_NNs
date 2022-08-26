@@ -58,6 +58,14 @@ class PendulumEnv(Environment):
         self._l = l
         self._g = g
 
+        self.config = {
+            'dt' : dt,
+            'm' : m,
+            'l' : l,
+            'g' : g,
+            'name' : name,
+        }
+
     #@partial(jax.jit, static_argnums=(0,))
     def dynamics_function(self, 
                         state : jnp.ndarray, 
@@ -100,17 +108,15 @@ def main():
 
     save_dir = ('./simulated_data')
     t = time.time()
-    dataset = env.gen_dataset(trajectory_num_steps=500, 
-                                num_training_trajectories=500, 
-                                num_testing_trajectories=200,
-                                training_x0_init_lb=jnp.array([-3.14/4, -1.0]),
-                                training_x0_init_ub=jnp.array([3.14/4, 1.0]),
-                                testing_x0_init_lb=jnp.array([-3.14/4, -1.0]),
-                                testing_x0_init_ub=jnp.array([3.14/4, 1.0]),
+    dataset = env.gen_dataset(trajectory_num_steps=50, 
+                                num_trajectories=500, 
+                                x0_init_lb=jnp.array([-3.14/4, -1.0]),
+                                x0_init_ub=jnp.array([3.14/4, 1.0]),
                                 save_str=save_dir)
     print(time.time() - t)
-    traj = dataset['training_dataset'][10, :]
-    env.plot_trajectory(traj)
+    print(dataset)
+    # traj = dataset['training_dataset'][10, :]
+    # env.plot_trajectory(traj)
 
 if __name__ == "__main__":
     import time
