@@ -18,7 +18,7 @@ class ModelFactory():
         self.model_setup = model_setup.copy()
 
     @abstractmethod
-    def instantiate_model(self, seed):
+    def create_model(self, seed):
         """
         Instantiate the model object from the model setup parameters.
         To be implemented by child classes.
@@ -27,7 +27,7 @@ class ModelFactory():
 class NodeFactory(ModelFactory):
     """Factory that creates a vanilla neural ODE."""
 
-    def instantiate_model(self, seed) -> NODE:
+    def create_model(self, seed) -> NODE:
         """Instantiate a vanilla neural ODE."""
         return NODE(rng_key=jax.random.PRNGKey(seed),
                     input_dim=self.model_setup['input_dim'],
@@ -38,7 +38,7 @@ class NodeFactory(ModelFactory):
 class HamiltonianNodeFactory(ModelFactory):
     """Factory that creates a Hamiltonian neural ODE."""
 
-    def instantiate_model(self, seed) -> HNODE:
+    def create_model(self, seed) -> HNODE:
         """Instantiate a hamiltonian neural ODE."""
         return HNODE(rng_key=jax.random.PRNGKey(seed),
                         input_dim=self.model_setup['input_dim'],
@@ -49,7 +49,7 @@ class HamiltonianNodeFactory(ModelFactory):
 class MlpFactory(ModelFactory):
     """Factory that creates a multi-layer perceptron."""
 
-    def instantiate_model(self, seed) -> MLP:
+    def create_model(self, seed) -> MLP:
         """Instantiate a multi-layer perceptron."""
         return MLP(rng_key=jax.random.PRNGKey(seed),
                 input_dim=self.model_setup['input_dim'],
@@ -59,7 +59,7 @@ class MlpFactory(ModelFactory):
 class PortHamiltonianNodeFactory(ModelFactory):
     """Factory that creates a port-Hamiltonian nerual ODE."""
     
-    def instantiate_model(self, seed) -> PHNODE:
+    def create_model(self, seed) -> PHNODE:
         """Instantiate a port-Hamiltonian neural ODE."""
         return PHNODE(rng_key=jax.random.PRNGKey(seed),
                         dt=self.model_setup['dt'],
