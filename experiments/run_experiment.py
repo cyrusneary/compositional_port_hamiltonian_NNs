@@ -1,3 +1,4 @@
+from re import T
 import jax
 import numpy as np
 import jax.numpy as jnp
@@ -16,9 +17,9 @@ from sacred.observers import FileStorageObserver
 # experiment_name = 'MLP Linear Regression' 
 # experiment_name = 'Vanilla NODE Spring Mass' 
 # experiment_name = 'Hamiltonian NODE Spring Mass'
-# experiment_name = 'NODE Double Spring Mass'
-experiment_name = 'Hamiltonian NODE Double Spring Mass'
-# experiment_name = 'Port Hamiltonian NODE Double Spring Mass'
+# experiment_name = 'Vanilla NODE Double Spring Mass'
+# experiment_name = 'Hamiltonian NODE Double Spring Mass'
+experiment_name = 'Port Hamiltonian NODE Double Spring Mass'
 
 ex = Experiment(experiment_name)
 
@@ -30,39 +31,46 @@ def config():
     # ex.add_config('configurations/train_neural_ode_spring_mass.yml')
     # ex.add_config('configurations/train_hnode_spring_mass.yml')
     # ex.add_config('configurations/train_neural_ode_double_spring_mass.yml')
-    ex.add_config('configurations/train_hnode_double_spring_mass.yml')
-    # ex.add_config('configurations/train_phnode_double_spring_mass.yml')
+    # ex.add_config('configurations/train_hnode_double_spring_mass.yml')
+    ex.add_config('configurations/train_phnode_double_spring_mass.yml')
 
 @ex.capture
 def load_dataset(dataset_setup, model_setup, _log):
     # Load the dataset using the file provided in the YAML config.
-    dataset_path = os.path.abspath(os.path.join(dataset_setup['dataset_path'], 
-                                            dataset_setup['dataset_file_name']))
+
+    train_dataset_path = os.path.abspath(os.path.join(dataset_setup['dataset_path'], 
+                                            dataset_setup['train_dataset_file_name']))
+    test_dataset_path = os.path.abspath(os.path.join(dataset_setup['dataset_path'], 
+                                            dataset_setup['test_dataset_file_name']))
 
     # Associate the dataset with the Sacred experiment
-    ex.add_resource(dataset_path)
+    ex.add_resource(train_dataset_path)
+    ex.add_resource(test_dataset_path)
 
     # Load the data to be used in the experiment
-    with open(dataset_path, 'rb') as f:
-        dataset = pickle.load(f)
+    with open(train_dataset_path, 'rb') as f:
+        train_dataset = pickle.load(f)
+
+    with open(test_dataset_path, 'rb') as f:
+        test_dataset = pickle.load(f)
 
     # Make sure the datasets are in the right input shape.
-    dataset['train_dataset']['inputs'] = \
-        dataset['train_dataset']['inputs'].reshape(-1, model_setup['input_dim'])
-    dataset['test_dataset']['inputs'] = \
-        dataset['test_dataset']['inputs'].reshape(-1, model_setup['input_dim'])
+    train_dataset['inputs'] = \
+        train_dataset['inputs'].reshape(-1, model_setup['input_dim'])
+    test_dataset['inputs'] = \
+        test_dataset['inputs'].reshape(-1, model_setup['input_dim'])
 
-    dataset['train_dataset']['outputs'] = \
-        dataset['train_dataset']['outputs'].reshape(-1, model_setup['output_dim'])
-    dataset['test_dataset']['outputs'] = \
-        dataset['test_dataset']['outputs'].reshape(-1, model_setup['output_dim'])
+    train_dataset['outputs'] = \
+        train_dataset['outputs'].reshape(-1, model_setup['output_dim'])
+    test_dataset['outputs'] = \
+        test_dataset['outputs'].reshape(-1, model_setup['output_dim'])
 
-    _log.info('Train dataset input shape: {}'.format(dataset['train_dataset']['inputs'].shape))
-    _log.info('Test dataset input shape: {}'.format(dataset['test_dataset']['inputs'].shape))
-    _log.info('Train dataset output shape: {}'.format(dataset['train_dataset']['outputs'].shape))
-    _log.info('Test dataset output shape: {}'.format(dataset['test_dataset']['outputs'].shape))
+    _log.info('Train dataset input shape: {}'.format(train_dataset['inputs'].shape))
+    _log.info('Test dataset input shape: {}'.format(test_dataset['inputs'].shape))
+    _log.info('Train dataset output shape: {}'.format(train_dataset['outputs'].shape))
+    _log.info('Test dataset output shape: {}'.format(test_dataset['outputs'].shape))
 
-    return dataset['train_dataset'], dataset['test_dataset']
+    return train_dataset, test_dataset
 
 @ex.capture
 def initialize_trainer(forward,

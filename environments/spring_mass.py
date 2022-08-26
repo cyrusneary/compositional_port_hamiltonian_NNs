@@ -164,13 +164,13 @@ class MassSpring(Environment):
         plt.show()
 
 def main():
-    env = MassSpring(dt=0.01, m=1., k=1., b=0.0)
+    env = MassSpring(dt=0.01, m=1., k=1., b=0.0, random_seed=19)
 
-    save_dir = (r'/home/cyrus/Documents/research/port_hamiltonian_modeling/'
-                'environments/simulated_data')
+    curdir = os.path.abspath(os.path.curdir)
+    save_dir = os.path.abspath(os.path.join(curdir, 'simulated_data'))
     t = time.time()
     dataset = env.gen_dataset(trajectory_num_steps=500, 
-                                num_trajectories=500, 
+                                num_trajectories=100, 
                                 x0_init_lb=jnp.array([-1.0, -1.0]),
                                 x0_init_ub=jnp.array([1.0, 1.0]),
                                 save_str=save_dir,)

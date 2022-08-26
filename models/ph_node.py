@@ -58,9 +58,9 @@ class PHNODE(NODE):
 
         model_setup = self.model_setup.copy()
 
-        self.J = model_setup['J']
-        self.R = model_setup['R']
-        self.G = model_setup['G']
+        self.J = jnp.array(model_setup['J'])
+        self.R = jnp.array(model_setup['R'])
+        self.G = jnp.array(model_setup['G'])
 
         self.num_submodels = model_setup['num_submodels']
 

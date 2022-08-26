@@ -27,9 +27,17 @@ def load_dataset(sacred_run_id, sacred_save_path=None):
 
     # load the training/testing datasets
     os.path.join(experiment_save_path, '..', '..', run['resources'][0][1])
-    dataset_path = os.path.abspath(os.path.join(experiment_save_path, '..', '..', run['resources'][0][1]))
-    with open(dataset_path, 'rb') as f:
-        datasets = pickle.load(f)
+    train_dataset_path = os.path.abspath(os.path.join(experiment_save_path, '..', '..', run['resources'][0][1]))
+    with open(train_dataset_path, 'rb') as f:
+        train_dataset = pickle.load(f)
+
+    # load the training/testing datasets
+    os.path.join(experiment_save_path, '..', '..', run['resources'][1][1])
+    test_dataset_path = os.path.abspath(os.path.join(experiment_save_path, '..', '..', run['resources'][1][1]))
+    with open(test_dataset_path, 'rb') as f:
+        test_dataset = pickle.load(f)
+
+    datasets = {'train_dataset' : train_dataset, 'test_dataset' : test_dataset}
 
     return datasets
 

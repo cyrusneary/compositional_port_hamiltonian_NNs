@@ -10,16 +10,11 @@ from environments.ph_system import PHSystem
 
 from common import load_config_file, load_dataset, load_model, load_metrics
 
-sacred_run_index = 60
+sacred_run_index = 98
 sacred_save_path = os.path.abspath('../experiments/sacred_runs/')
 
 config = load_config_file(sacred_run_index, sacred_save_path)
-datasets = load_dataset(sacred_run_index, sacred_save_path)
 model, params = load_model(sacred_run_index, sacred_save_path)
-results = load_metrics(sacred_run_index, sacred_save_path)
-
-train_dataset = datasets['train_dataset']
-test_dataset = datasets['test_dataset']
 
 def eval_H1(state):
     q1, q2, p1, p2 = state

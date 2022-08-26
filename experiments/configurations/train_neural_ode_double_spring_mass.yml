@@ -1,6 +1,8 @@
 experiment_name : 'Double spring mass vanilla NODE'
 dataset_setup : 
-  dataset_file_name : 'Double_Spring_Mass_2022-08-24-11-23-49.pkl'
+  # dataset_file_name : 'Double_Spring_Mass_2022-08-24-11-23-49.pkl'
+  train_dataset_file_name : 'Double_Spring_Mass_training_distances_2022-08-26-17-04-36.pkl'
+  test_dataset_file_name : 'Double_Spring_Mass_testing_distances_2022-08-26-17-05-19.pkl'
   dataset_path : '../environments/simulated_data'
 model_setup:
   model_type : 'node'
