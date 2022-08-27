@@ -4,7 +4,7 @@ import sacred
 
 def load_dataset(dataset_path : str, 
                 file_name : str, 
-                runner : sacred.run.Run) -> dict:
+                sacred_runner : sacred.run.Run) -> dict:
     """
     Load the dataset from the provided file path string and filename string.
     """
@@ -14,7 +14,7 @@ def load_dataset(dataset_path : str,
     with open(dataset_path, 'rb') as f:
         dataset = pickle.load(f)
 
-    runner.add_resource(dataset_path)
+    sacred_runner.add_resource(dataset_path)
 
     return dataset
 
@@ -44,7 +44,7 @@ def reshape_data(dataset : dict) -> dict:
 
     return dataset
 
-def load_datasets(dataset_setup : dict, runner : sacred.run.Run) -> tuple:
+def load_datasets(dataset_setup : dict, sacred_runner : sacred.run.Run) -> tuple:
     """
     Load the training and testing dataset(s), as specified by the configuration
     dictionary dataset_setup.
@@ -57,7 +57,7 @@ def load_datasets(dataset_setup : dict, runner : sacred.run.Run) -> tuple:
     # If only one dataset is specified, then return a dictionary representing
     # that datset.
     if type(train_dataset_file_name) is str:
-        train_dataset = load_dataset(dataset_path, train_dataset_file_name, runner)
+        train_dataset = load_dataset(dataset_path, train_dataset_file_name, sacred_runner)
         train_dataset = reshape_data(train_dataset)
         print('Train dataset input shape: {}'.format(train_dataset['inputs'].shape))
         print('Train dataset output shape: {}'.format(train_dataset['outputs'].shape))
@@ -67,14 +67,14 @@ def load_datasets(dataset_setup : dict, runner : sacred.run.Run) -> tuple:
     else:
         train_dataset = []
         for i in range(len(train_dataset_file_name)):
-            dset = load_dataset(dataset_path, train_dataset_file_name[i], runner)
+            dset = load_dataset(dataset_path, train_dataset_file_name[i], sacred_runner)
             dset = reshape_data(dset)
             train_dataset.append(dset)
             print('Train dataset {} input shape: {}'.format(i, dset['inputs'].shape))
             print('Train dataset {} output shape: {}'.format(i, dset['outputs'].shape))
 
     # Load the test dataset
-    test_dataset = load_dataset(dataset_path, test_dataset_file_name, runner)
+    test_dataset = load_dataset(dataset_path, test_dataset_file_name, sacred_runner)
     test_dataset = reshape_data(test_dataset)
     print('Test dataset input shape: {}'.format(test_dataset['inputs'].shape))
     print('Test dataset output shape: {}'.format(test_dataset['outputs'].shape))
