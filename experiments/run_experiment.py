@@ -58,16 +58,13 @@ def experiment_main(
     model_factory = get_model_factory(model_setup)
     model =  model_factory.create_model(seed)
 
+    # Create a model trainer object, which handles all of the model optimization.
     from helpers.trainer_factories import get_trainer_factory
     trainer_factory = get_trainer_factory(trainer_setup)
-    trainer = trainer_factory.create_trainer(forward=model.forward, 
-                                                init_params=model.init_params)
+    trainer = trainer_factory.create_trainer(model)
 
     # Run the training algorithm
-    if trainer_setup['trainer_type'] == 'sgd':
-        trainer.train(trainer_setup['num_training_steps'],
-                    trainer_setup['minibatch_size'],
-                    train_dataset,
+    trainer.train(train_dataset,
                     test_dataset,
                     jax.random.PRNGKey(seed),
                     sacred_runner=_run)

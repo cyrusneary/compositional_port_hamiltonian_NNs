@@ -32,6 +32,8 @@ class SGDTrainer(object):
 
         self.trainer_setup = trainer_setup
         self.pen_l2_nn_params = float(trainer_setup['pen_l2_nn_params'])
+        self.num_training_steps = trainer_setup['num_training_steps']
+        self.minibatch_size = trainer_setup['minibatch_size']
 
         self.results = {
             'training.loss' : {'steps' : [], 'values' : []},
@@ -118,8 +120,6 @@ class SGDTrainer(object):
 
     # @partial(jax.jit, static_argnums=(0,7))
     def train(self,
-                num_training_steps : int, 
-                minibatch_size : int, 
                 training_dataset : jnp.ndarray,
                 testing_dataset : jnp.ndarray,
                 rng_key : jax.random.PRNGKey,
@@ -145,13 +145,13 @@ class SGDTrainer(object):
         else:
             completed_steps_offset = max(self.results['training.loss']['steps']) + 1
 
-        for step in tqdm(range(num_training_steps)):
+        for step in tqdm(range(self.num_training_steps)):
             rng_key, subkey = jax.random.split(rng_key)
 
             minibatch_sample_indeces = \
                 jax.random.choice(subkey, 
                     jnp.arange(0, training_dataset_size),
-                        (minibatch_size,), 
+                        (self.minibatch_size,), 
                         replace=True)
 
             minibatch_in = training_dataset['inputs'][minibatch_sample_indeces, :]

@@ -10,7 +10,7 @@ class PHNodeTrainer(object):
     """
     def __init__(self,
                 forward,
-                init_params_list : list,
+                init_params : list,
                 submodel_trainer_list : list,
                 trainer_setup : dict):
         """
@@ -20,10 +20,10 @@ class PHNodeTrainer(object):
         ----------
         forward :
             The forward model.
-            forward(params, x) evaluates the model instantiated with parameters params
-            on the input x.
+            forward(params, x) evaluates the composite port-Hailtonian model 
+            instantiated with parameters list "params" on the input "x".
         init_params :
-            The initial state of the parameters.
+            A list of the initial states of the parameters for the various submodels.
         optimizer_setup :
             A dictionary containing setup information for the optimizer.
         trainer_setup:
@@ -33,10 +33,13 @@ class PHNodeTrainer(object):
         self.forward = forward
         self.submodel_trainer_list = submodel_trainer_list
 
-        self.init_params_list = deepcopy(init_params_list)
-        self.params_list = deepcopy(init_params_list)
+        self.init_params = deepcopy(init_params)
+        self.params_list = deepcopy(init_params)
 
         self.num_submodels = len(submodel_trainer_list)
+
+        self.num_training_steps = trainer_setup['num_training_steps']
+        self.minibatch_size = trainer_setup['minibatch_size']
 
         self.trainer_setup = trainer_setup
 
@@ -82,9 +85,7 @@ class PHNodeTrainer(object):
         self.loss = loss
 
     def train(self,
-                num_training_steps : int, 
-                minibatch_size : int, 
-                training_dataset_list : list,
+                training_dataset : list,
                 testing_dataset : jnp.ndarray,
                 rng_key : jax.random.PRNGKey,
                 sacred_runner=None):
@@ -99,22 +100,22 @@ class PHNodeTrainer(object):
         sacred_runner :
             The Run object for the current Sacred experiment.
         """
-        assert (training_dataset_list is not None) \
+        assert (training_dataset is not None) \
             and (testing_dataset is not None)
 
-        assert len(training_dataset_list) == self.num_submodels, \
+        assert len(training_dataset) == self.num_submodels, \
             "The number of training datasets should equal the number of submodels."
 
         training_dataset_sizes = []
         for trainer_ind in range(self.num_submodels):
-            training_dataset_sizes[trainer_ind] = training_dataset_list[trainer_ind].shape[0]
+            training_dataset_sizes[trainer_ind] = training_dataset[trainer_ind].shape[0]
 
         if len(self.results['training.loss']['steps']) == 0:
             completed_steps_offset = 0
         else:
             completed_steps_offset = max(self.results['training.loss']['steps']) + 1
 
-        for step in tqdm(range(num_training_steps)):
+        for step in tqdm(range(self.num_training_steps)):
 
             # Update each of the submodels individually on their training datasets
             for trainer_ind in range(self.num_submodels):
@@ -125,12 +126,12 @@ class PHNodeTrainer(object):
                 minibatch_sample_indeces = \
                     jax.random.choice(subkey, 
                         jnp.arange(0, training_dataset_size),
-                            (minibatch_size,), 
+                            (self.minibatch_size,), 
                             replace=True)
 
-                minibatch_in = training_dataset_list[trainer_ind]['inputs']\
+                minibatch_in = training_dataset[trainer_ind]['inputs']\
                     [minibatch_sample_indeces, :]
-                minibatch_out = training_dataset_list[trainer_ind]['outputs']\
+                minibatch_out = training_dataset[trainer_ind]['outputs']\
                     [minibatch_sample_indeces, :]
 
                 self.params_list[trainer_ind], \
