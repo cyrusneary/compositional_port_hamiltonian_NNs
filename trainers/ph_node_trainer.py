@@ -4,12 +4,12 @@ import jax
 from functools import partial
 from tqdm import tqdm
 
-class PHSystemTrainer(object):
+class PHNodeTrainer(object):
     """
     Class containing the methods and data necessary to train a model.
     """
     def __init__(self,
-                forward : function,
+                forward,
                 init_params_list : list,
                 submodel_trainer_list : list,
                 trainer_setup : dict):

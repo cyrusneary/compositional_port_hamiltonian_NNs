@@ -34,21 +34,16 @@ def config():
     ex.add_config('configurations/train_hnode_double_spring_mass.yml')
     # ex.add_config('configurations/train_phnode_double_spring_mass.yml')
 
-@ex.capture
-def initialize_trainer(forward,
-                        init_params,
-                        train_dataset,
-                        trainer_setup,
-                        optimizer_setup=None):
-    if trainer_setup['trainer_type'] == 'sgd':
-        from trainers.sgd_trainer import Trainer
-        return Trainer(forward,
-                        init_params,
-                        optimizer_setup,
-                        trainer_setup)
-
 @ex.automain
-def experiment_main(experiment_name, trainer_setup, dataset_setup, model_setup, seed, _run, _log):
+def experiment_main(
+        experiment_name, 
+        trainer_setup, 
+        dataset_setup, 
+        model_setup, 
+        seed, 
+        _run, 
+        _log
+    ):
 
     # Add a more unique experiment identifier
     datetime_experiment_name = \
@@ -63,10 +58,10 @@ def experiment_main(experiment_name, trainer_setup, dataset_setup, model_setup, 
     model_factory = get_model_factory(model_setup)
     model =  model_factory.create_model(seed)
 
-    # Initialize the model trainer.
-    trainer = initialize_trainer(forward=model.forward, 
-                                    init_params=model.init_params,
-                                    train_dataset=train_dataset)
+    from helpers.trainer_factories import get_trainer_factory
+    trainer_factory = get_trainer_factory(trainer_setup)
+    trainer = trainer_factory.create_trainer(forward=model.forward, 
+                                                init_params=model.init_params)
 
     # Run the training algorithm
     if trainer_setup['trainer_type'] == 'sgd':

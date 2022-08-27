@@ -64,7 +64,7 @@ def load_datasets(dataset_setup : dict, runner : sacred.run.Run) -> tuple:
 
     # If a list of datsets are specified, then return a list of dictionaries
     # representing those datasets.
-    elif type(train_dataset_file_name) is list:
+    else:
         train_dataset = []
         for i in range(len(train_dataset_file_name)):
             dset = load_dataset(dataset_path, train_dataset_file_name[i], runner)

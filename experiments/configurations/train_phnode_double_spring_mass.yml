@@ -1,6 +1,10 @@
 experiment_name : 'Double spring mass port-Hamiltonian NODE'
 dataset_setup : 
-  dataset_file_name : 'Double_Spring_Mass_2022-08-24-11-23-49.pkl'
+  train_dataset_file_name : [
+    'Spring_Mass_training_2022-08-26-17-16-00.pkl',
+    'Spring_Mass_training_2022-08-26-17-16-00.pkl'
+  ]
+  test_dataset_file_name : 'Double_Spring_Mass_testing_differences_2022-08-26-17-13-29.pkl'
   dataset_path : '../environments/simulated_data'
 
 model_setup:
@@ -42,16 +46,14 @@ trainer_setup:
     trainer_type: 'sgd'
     num_training_steps: 10000
     pen_l2_nn_params: 1e-12
+    optimizer_setup:
+      name: 'adam'
+      learning_rate : !!float 1e-4
   subtrainer1_setup:
     minibatch_size: 32
     trainer_type: 'sgd'
     num_training_steps: 10000
     pen_l2_nn_params: 1e-12
-
-optimizer_setup:
-  suboptimizer0_setup:
-    name: 'adam'
-    learning_rate : !!float 1e-4
-  suboptimizer1_setup:
-    name: 'adam'
-    learning_rate : !!float 1e-4
+    optimizer_setup:
+      name: 'adam'
+      learning_rate : !!float 1e-4

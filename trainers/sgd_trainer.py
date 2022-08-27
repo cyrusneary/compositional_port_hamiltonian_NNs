@@ -4,14 +4,13 @@ import optax
 from functools import partial
 from tqdm import tqdm
 
-class Trainer(object):
+class SGDTrainer(object):
     """
     Class containing the methods and data necessary to train a model.
     """
     def __init__(self,
                 forward,
                 init_params,
-                optimizer_setup,
                 trainer_setup):
         """
         Initialization function.
@@ -20,16 +19,14 @@ class Trainer(object):
         ----------
         forward :
             The forward model.
-            forward(params, x) evaluates the model instantiated with parameters params
-            on the input x.
+            forward(params, x) evaluates the model instantiated with parameters 
+            params on the input x.
         init_params :
             The initial state of the parameters.
-        optimizer_setup :
-            A dictionary containing setup information for the optimizer.
         trainer_setup:
             A dictionary containing setup information for the trainer.
         """
-        self.optimizer_setup = optimizer_setup
+        self.optimizer_setup = trainer_setup['optimizer_setup']
         self.init_params = init_params
         self.params = init_params
 

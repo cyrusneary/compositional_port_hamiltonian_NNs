@@ -17,6 +17,6 @@ trainer_setup:
   num_training_steps: 10000
   minibatch_size: 32
   pen_l2_nn_params: 1e-12
-optimizer_setup:
-  name: 'adam'
-  learning_rate : !!float 1e-4
+  optimizer_setup:
+    name: 'adam'
+    learning_rate : !!float 1e-4

@@ -64,8 +64,8 @@ class PHNODE(NODE):
 
         self.num_submodels = model_setup['num_submodels']
 
-        init_params_list = []
-        params_list = []
+        init_params = []
+        params = []
         submodel_list = []
 
         # Instantiate each submodel, each of which is itself a hamiltonian neural ODE.
@@ -84,8 +84,8 @@ class PHNODE(NODE):
             )
 
             submodel_list.append(submodel)
-            init_params_list.append(submodel.init_params)
-            params_list.append(submodel.init_params)
+            init_params.append(submodel.init_params)
+            params.append(submodel.init_params)
 
         # Create a dictionary to be able to separate the state into the 
         # states relevant to the various submodels.
@@ -97,11 +97,11 @@ class PHNODE(NODE):
                 slice(slice_ind, (slice_ind + submodel_setup['input_dim']))
             slice_ind = slice_ind + submodel_setup['input_dim']
 
-        def hamiltonian(params_list, x):
+        def hamiltonian(params, x):
             output = 0
             for submodel_ind in range(model_setup['num_submodels']):
                 state = x[state_slices[submodel_ind]]
-                params = params_list[submodel_ind]
+                params = params[submodel_ind]
                 submodel = submodel_list[submodel_ind]
                 output = output + submodel.hamiltonian_network.apply(params, state)
             return output
@@ -139,5 +139,5 @@ class PHNODE(NODE):
         self.forward = forward
         self.hamiltonian_network = hamiltonian
         self.submodel_list = submodel_list
-        self.params_list = params_list
-        self.init_params_list = init_params_list
+        self.params = params
+        self.init_params = init_params
