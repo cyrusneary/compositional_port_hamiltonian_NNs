@@ -30,32 +30,31 @@ class PHNodeTrainer(object):
             A dictionary containing setup information for the trainer.
         """
 
-        self.forward = forward
         self.submodel_trainer_list = submodel_trainer_list
 
         self.init_params = deepcopy(init_params)
-        self.params_list = deepcopy(init_params)
+        self.params = deepcopy(init_params)
 
         self.num_submodels = len(submodel_trainer_list)
 
         self.num_training_steps = trainer_setup['num_training_steps']
-        self.minibatch_size = trainer_setup['minibatch_size']
 
         self.trainer_setup = trainer_setup
 
         self.results = {
-            'training.loss' : {},
-            'testing.loss' : {'steps' : [], 'values' : []},
-        }
-
+                'training.loss' : {},
+                'testing.loss' : {'steps' : [], 'values' : []},
+            }
         for trainer_ind in range(self.num_submodels):
             self.results['training.loss']['submodel_{}'.format(trainer_ind)] = \
                 {'steps' : [], 'values' : []}
 
+        self._init_trainer(forward)
+
     def _init_trainer(self, forward):
 
         @partial(jax.jit)
-        def loss(params_list : list, 
+        def loss(params : list, 
                 x : jnp.ndarray, 
                 y : jnp.ndarray) -> jnp.float32:
             """
@@ -63,7 +62,7 @@ class PHNodeTrainer(object):
 
             Parameters
             ----------
-            params_list :
+            params :
                 A list containint the parameters of the submodels.
             x :
                 Array representing the input(s) on which to evaluate the forward model.
@@ -77,7 +76,7 @@ class PHNodeTrainer(object):
             total_loss :
                 The computed loss on the labeled datapoints.
             """
-            out = forward(params_list=params_list, x=x)
+            out = forward(params=params, x=x)
             num_datapoints = x.shape[0]
             data_loss = jnp.sum((out - y)**2) / num_datapoints
             return data_loss, data_loss
@@ -108,25 +107,34 @@ class PHNodeTrainer(object):
 
         training_dataset_sizes = []
         for trainer_ind in range(self.num_submodels):
-            training_dataset_sizes[trainer_ind] = training_dataset[trainer_ind].shape[0]
-
-        if len(self.results['training.loss']['steps']) == 0:
+            training_dataset_sizes.append(
+                    training_dataset[trainer_ind]['inputs'].shape[0]
+                )
+                
+        if len(self.results['testing.loss']['steps']) == 0:
             completed_steps_offset = 0
         else:
-            completed_steps_offset = max(self.results['training.loss']['steps']) + 1
+            completed_steps_offset = \
+                max(self.results['testing.loss']['steps']) + 1
 
         for step in tqdm(range(self.num_training_steps)):
 
-            # Update each of the submodels individually on their training datasets
+            # Update each of the submodels individually 
+            # on their training datasets.
             for trainer_ind in range(self.num_submodels):
-                rng_key, subkey = jax.random.split(rng_key)
 
+                # Grab the relevant submodel trainer, and training parameters.
+                subtrainer = self.submodel_trainer_list[trainer_ind]                
                 training_dataset_size = training_dataset_sizes[trainer_ind]
+                minibatch_size = self.trainer_setup[
+                    'subtrainer{}_setup'.format(trainer_ind)]['minibatch_size']
 
+                # Randomly sample a minibatch of training data.
+                rng_key, subkey = jax.random.split(rng_key)
                 minibatch_sample_indeces = \
                     jax.random.choice(subkey, 
                         jnp.arange(0, training_dataset_size),
-                            (self.minibatch_size,), 
+                            (minibatch_size,), 
                             replace=True)
 
                 minibatch_in = training_dataset[trainer_ind]['inputs']\
@@ -134,15 +142,16 @@ class PHNodeTrainer(object):
                 minibatch_out = training_dataset[trainer_ind]['outputs']\
                     [minibatch_sample_indeces, :]
 
-                self.params_list[trainer_ind], \
-                    self.submodel_trainer_list[trainer_ind].opt_state, \
-                        loss_val = self.submodel_trainer_list[trainer_ind].update(
-                            self.submodel_trainer_list.optimizer,
-                            self.submodel_trainer_list[trainer_ind].opt_state,
-                            self.params_list[trainer_ind],
-                            minibatch_in,
-                            minibatch_out
-                        )
+                self.params[trainer_ind], \
+                    subtrainer.opt_state, \
+                        loss_val = \
+                            subtrainer.update(
+                                    subtrainer.optimizer,
+                                    subtrainer.opt_state,
+                                    self.params[trainer_ind],
+                                    minibatch_in,
+                                    minibatch_out
+                                )
             
                 self.results['training.loss']\
                     ['submodel_{}'.format(trainer_ind)]\
@@ -167,4 +176,8 @@ class PHNodeTrainer(object):
             self.results['testing.loss']['values'].append(float(test_loss))
 
             if sacred_runner is not None:
-                sacred_runner.log_scalar('testing.loss', float(test_loss), step + completed_steps_offset)
+                sacred_runner.log_scalar(
+                        'testing.loss', 
+                        float(test_loss), 
+                        step + completed_steps_offset
+                    )

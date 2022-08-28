@@ -32,7 +32,7 @@ class PHNodeTrainerFactory(trainerFactory):
 
         # First, iterate over the submodels and create a separate trainer
         # for each of them.
-        num_submodels = self.trainer_setup['num_submodels']
+        num_submodels = self.trainer_setup['num_subtrainers']
         submodel_trainer_list = []
         for submodel_ind in range(num_submodels):
             trainer_factory = get_trainer_factory(
@@ -47,13 +47,19 @@ class PHNodeTrainerFactory(trainerFactory):
         return PHNodeTrainer(forward=model.forward,
                                 init_params=model.init_params,
                                 submodel_trainer_list=submodel_trainer_list, 
-                                setup_dict=self.trainer_setup)
+                                trainer_setup=self.trainer_setup)
 
+# A mapping from the names of the trainer types to the 
+# appropriate trainer factories.
 trainer_factories = {
     'sgd' : SGDTrainerFactory,
-    'ph_node' : PHNodeTrainerFactory,
+    'phnode' : PHNodeTrainerFactory,
 }
 
 def get_trainer_factory(trainer_setup):
+    """
+    Return the appropriate trainer factory, given the configuration
+    information provided in the trainer_setup dictionary.
+    """
     factory_name = trainer_setup['trainer_type']
     return trainer_factories[factory_name](trainer_setup)

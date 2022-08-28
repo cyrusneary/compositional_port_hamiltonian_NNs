@@ -41,10 +41,12 @@ model_setup:
         activation: 'tanh'
 
 trainer_setup:
+  trainer_type : 'phnode'
+  num_subtrainers : 2
+  num_training_steps : 10000
   subtrainer0_setup:
     minibatch_size: 32
     trainer_type: 'sgd'
-    num_training_steps: 10000
     pen_l2_nn_params: 1e-12
     optimizer_setup:
       name: 'adam'
@@ -52,7 +54,6 @@ trainer_setup:
   subtrainer1_setup:
     minibatch_size: 32
     trainer_type: 'sgd'
-    num_training_steps: 10000
     pen_l2_nn_params: 1e-12
     optimizer_setup:
       name: 'adam'

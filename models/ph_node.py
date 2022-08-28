@@ -19,10 +19,6 @@ class PHNODE(NODE):
         rng_key : 
             A key for random initialization of the parameters of the 
             neural networks.
-        input_dim : 
-            The input dimension of the system.
-        output_dim : 
-            The number of state of the system.
         dt : 
             The amount of time between individual system datapoints.
         model_setup : 
@@ -99,9 +95,10 @@ class PHNODE(NODE):
             output = 0
             for submodel_ind in range(model_setup['num_submodels']):
                 state = x[state_slices[submodel_ind]]
-                params = params[submodel_ind]
+                submodel_params = params[submodel_ind]
                 submodel = submodel_list[submodel_ind]
-                output = output + submodel.hamiltonian_network.apply(params, state)
+                output = output + \
+                    submodel.hamiltonian_network.apply(submodel_params, state)
             return output
 
         hamiltonian = jax.jit(hamiltonian)
@@ -116,7 +113,8 @@ class PHNODE(NODE):
                 # This sum is not a real sum. It is just a quick way to get the
                 # output of the Hamiltonian network into scalar form so that we
                 # can take its gradient.
-                dh = jax.vmap(jax.grad(hamiltonian))(x)
+                H = lambda x : jnp.sum(hamiltonian(params=params, x=x))
+                dh = jax.vmap(jax.grad(H))(x)
                 return jnp.matmul(self.J - self.R, dh.transpose()).transpose()
 
             k1 = f_approximator(x)

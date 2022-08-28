@@ -18,8 +18,8 @@ from sacred.observers import FileStorageObserver
 # experiment_name = 'Vanilla NODE Spring Mass' 
 # experiment_name = 'Hamiltonian NODE Spring Mass'
 # experiment_name = 'Vanilla NODE Double Spring Mass'
-experiment_name = 'Hamiltonian NODE Double Spring Mass'
-# experiment_name = 'Port Hamiltonian NODE Double Spring Mass'
+# experiment_name = 'Hamiltonian NODE Double Spring Mass'
+experiment_name = 'Port Hamiltonian NODE Double Spring Mass'
 
 ex = Experiment(experiment_name)
 
@@ -31,8 +31,8 @@ def config():
     # ex.add_config('configurations/train_neural_ode_spring_mass.yml')
     # ex.add_config('configurations/train_hnode_spring_mass.yml')
     # ex.add_config('configurations/train_neural_ode_double_spring_mass.yml')
-    ex.add_config('configurations/train_hnode_double_spring_mass.yml')
-    # ex.add_config('configurations/train_phnode_double_spring_mass.yml')
+    # ex.add_config('configurations/train_hnode_double_spring_mass.yml')
+    ex.add_config('configurations/train_phnode_double_spring_mass.yml')
 
 @ex.automain
 def experiment_main(
@@ -75,8 +75,9 @@ def experiment_main(
     model_save_file_str = os.path.join(os.path.abspath(model_save_path), 
                                                         model_file_name)
     ex.add_config({
-        'model_save_file_str': model_save_file_str,
-        'model_save_path' : model_save_path,})
+            'model_save_file_str': model_save_file_str,
+            'model_save_path' : model_save_path,
+        })
 
     with open(model_save_file_str, 'wb') as f:
         pickle.dump(trainer.params, f)
