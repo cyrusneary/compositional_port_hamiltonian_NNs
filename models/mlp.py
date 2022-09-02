@@ -3,6 +3,8 @@ import jax.numpy as jnp
 
 import haiku as hk
 
+from .helpers import choose_nonlinearity
+
 from .common import get_params_struct, get_flat_params, unflatten_params
 
 class MLP(object):
@@ -69,6 +71,8 @@ class MLP(object):
             A function to update the parameters of the neural ODE.
         """
         nn_setup_params = self.nn_setup_params.copy()
+        nn_setup_params['activation'] = choose_nonlinearity(nn_setup_params['activation'])
+
 
         if (not 'activation' in nn_setup_params.keys()) or \
             (nn_setup_params['activation'] == 'relu'):

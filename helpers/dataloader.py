@@ -52,7 +52,7 @@ def load_datasets(dataset_setup : dict, sacred_runner : sacred.run.Run) -> tuple
     dictionary dataset_setup.
     """
 
-    if dataset_setup['dataset_file_name'] == 'mnist':
+    if 'dataset_file_name' in dataset_setup.keys() and dataset_setup['dataset_file_name'] == 'mnist':
         from sklearn import datasets
         digits = datasets.load_digits()
 

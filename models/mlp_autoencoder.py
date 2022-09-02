@@ -5,6 +5,8 @@ import haiku as hk
 
 from .common import get_params_struct, get_flat_params, unflatten_params
 
+from .helpers import choose_nonlinearity
+
 class MlpAutoencoder(object):
 
     def __init__(self,
@@ -76,14 +78,7 @@ class MlpAutoencoder(object):
             A function to update the parameters of the neural ODE.
         """
         encoder_setup_params = self.encoder_setup_params.copy()
-
-        if (not 'activation' in encoder_setup_params.keys()) or \
-            (encoder_setup_params['activation'] == 'relu'):
-            encoder_setup_params['activation'] = jax.nn.relu
-        elif (encoder_setup_params['activation'] == 'tanh'):
-            encoder_setup_params['activation'] = jax.nn.tanh
-        elif (encoder_setup_params['activation'] == 'leaky_relu'):
-            encoder_setup_params['activation'] = jax.nn.leaky_relu
+        nonlinearity = choose_nonlinearity(encoder_setup_params['activation'])
 
         # Build the encoder network.
         def encoder_network(x):
@@ -94,9 +89,8 @@ class MlpAutoencoder(object):
                     x = hk.Linear(encoder_setup_params['output_sizes'][output_ind])(x)
                 else: # add residual connections
                     x = x + hk.Linear(encoder_setup_params['output_sizes'][output_ind])(x)
-
                 if output_ind < len(encoder_setup_params['output_sizes']) - 1:
-                    x = encoder_setup_params['activation'](x)
+                    x = nonlinearity(x)
             return x
 
         encoder_network_pure = hk.without_apply_rng(hk.transform(encoder_network))
@@ -112,14 +106,7 @@ class MlpAutoencoder(object):
         encode = jax.jit(encode)
 
         decoder_setup_params = self.decoder_setup_params.copy()
-
-        if (not 'activation' in decoder_setup_params.keys()) or \
-            (decoder_setup_params['activation'] == 'relu'):
-            decoder_setup_params['activation'] = jax.nn.relu
-        elif (decoder_setup_params['activation'] == 'tanh'):
-            decoder_setup_params['activation'] = jax.nn.tanh
-        elif (decoder_setup_params['activation'] == 'leaky_relu'):
-            decoder_setup_params['activation'] = jax.nn.leaky_relu
+        nonlinearity = choose_nonlinearity(decoder_setup_params['activation'])
 
         # Build the decoder network.
         def decoder_network(x):
@@ -133,7 +120,7 @@ class MlpAutoencoder(object):
                     x = x + hk.Linear(decoder_setup_params['output_sizes'][output_ind])(x)
 
                 if output_ind < len(decoder_setup_params['output_sizes']) - 1:
-                    x = decoder_setup_params['activation'](x)
+                    x = nonlinearity(x)
             return x
 
         decoder_network_pure = hk.without_apply_rng(hk.transform(decoder_network))

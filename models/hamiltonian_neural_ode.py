@@ -5,6 +5,8 @@ import numpy as np
 import haiku as hk
 from jax.experimental.ode import odeint
 
+from .helpers import choose_nonlinearity
+
 from .common import get_params_struct
 
 from .neural_ode import NODE
@@ -75,12 +77,13 @@ class HNODE(NODE):
         """
 
         nn_setup_params = self.nn_setup_params.copy()
+        nn_setup_params['activation'] = choose_nonlinearity(nn_setup_params['activation'])
 
-        if (not 'activation' in nn_setup_params.keys()) or \
-            (nn_setup_params['activation'] == 'relu'):
-            nn_setup_params['activation'] = jax.nn.relu
-        elif (nn_setup_params['activation'] == 'tanh'):
-            nn_setup_params['activation'] = jax.nn.tanh
+        # if (not 'activation' in nn_setup_params.keys()) or \
+        #     (nn_setup_params['activation'] == 'relu'):
+        #     nn_setup_params['activation'] = jax.nn.relu
+        # elif (nn_setup_params['activation'] == 'tanh'):
+        #     nn_setup_params['activation'] = jax.nn.tanh
 
         def mlp_forward(x):
             return hk.nets.MLP(**nn_setup_params)(x)
