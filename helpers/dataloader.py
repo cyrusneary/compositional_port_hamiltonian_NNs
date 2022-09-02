@@ -2,6 +2,8 @@ import os
 import pickle
 import sacred
 
+import jax.numpy as jnp
+
 def load_dataset(dataset_path : str, 
                 file_name : str, 
                 sacred_runner : sacred.run.Run) -> dict:
@@ -49,6 +51,26 @@ def load_datasets(dataset_setup : dict, sacred_runner : sacred.run.Run) -> tuple
     Load the training and testing dataset(s), as specified by the configuration
     dictionary dataset_setup.
     """
+
+    if dataset_setup['dataset_file_name'] == 'mnist':
+        from sklearn import datasets
+        digits = datasets.load_digits()
+
+        train_test_split = dataset_setup['train_test_split_percentage']
+
+        num_total_points = len(digits.data)
+        num_train_points = int(num_total_points * train_test_split)
+
+        train_dataset = digits.data[:num_train_points]
+        test_dataset = digits.data[num_train_points:]
+
+        train_dataset = jnp.array(train_dataset / 255.0)
+        test_dataset = jnp.array(test_dataset / 255.0)
+
+        train_dataset = {'inputs': train_dataset, 'outputs': train_dataset}
+        test_dataset = {'inputs': test_dataset, 'outputs': test_dataset}
+
+        return train_dataset, test_dataset
 
     dataset_path = dataset_setup['dataset_path']
     train_dataset_file_name = dataset_setup['train_dataset_file_name']

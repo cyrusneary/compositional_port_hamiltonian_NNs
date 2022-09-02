@@ -8,6 +8,7 @@ from models.mlp import MLP
 from models.neural_ode import NODE
 from models.hamiltonian_neural_ode import HNODE
 from models.ph_node import PHNODE
+from models.mlp_autoencoder import MlpAutoencoder
 
 import jax
 
@@ -65,11 +66,24 @@ class PortHamiltonianNodeFactory(ModelFactory):
                         dt=self.model_setup['dt'],
                         model_setup=self.model_setup)
 
+class AutoencoderFactory(ModelFactory):
+    """Factory that creates an autoencoder."""
+
+    def create_model(self, seed) -> MlpAutoencoder:
+        """Instantiate an autoencoder."""
+        return MlpAutoencoder(rng_key=jax.random.PRNGKey(seed),
+                                input_dim=self.model_setup['input_dim'],
+                                latent_dim=self.model_setup['latent_dim'],
+                                output_dim=self.model_setup['input_dim'],
+                                encoder_setup_params=self.model_setup['encoder_setup_params'],
+                                decoder_setup_params=self.model_setup['decoder_setup_params'])
+
 model_factories = {
     'node' : NodeFactory,
     'hnode' : HamiltonianNodeFactory,
     'mlp' : MlpFactory,
     'phnode' : PortHamiltonianNodeFactory,
+    'mlp_autoencoder' : AutoencoderFactory,
 }
 
 def get_model_factory(model_setup):
