@@ -1,4 +1,5 @@
 import random
+from turtle import down
 import jax
 import jax.numpy as jnp
 import numpy as np
@@ -14,6 +15,8 @@ import os
 from functools import partial
 
 from environment import Environment
+
+from PIL import Image, ImageOps
 
 ###### Code to generate a dataset of double-pendulum trajectories ######
 
@@ -169,44 +172,51 @@ class PendulumEnv(Environment):
             np.array(pygame.surfarray.pixels3d(self.screen)), axes=(1, 0, 2)
         )
 
-    def downsample_image(self, 
+    def process_image(self, 
                         image : jnp.ndarray, 
-                        scale : int = 2):
+                        shape : tuple,
+                        grayscale : bool = True):
         """
         Downsample an image by a scale factor.
         """
-        return image[::scale, ::scale, :]
-
-        # X = X[...,0][440:-220,330:-330] - X[...,1][440:-220,330:-330]
-        # return scipy.misc.imresize(X, [int(side), side]) / 255.
+        downsized = Image.fromarray(image).resize(shape)
+        if grayscale:
+            return np.array(ImageOps.grayscale(downsized)) / 255
+        else:
+            return np.array(downsized) / 255
 
 def main():
     env = PendulumEnv(dt=0.01)
 
-    # state = jnp.array([0.0, 0.0])
-    # img = env.render_state(state)
-    # plt.imshow(img)
-    # plt.show()
-
-    save_dir = ('./simulated_data')
-    t = time.time()
-    dataset = env.gen_dataset(trajectory_num_steps=500, 
-                                num_trajectories=100, 
-                                x0_init_lb=jnp.array([-3.14/2, -1.0]),
-                                x0_init_ub=jnp.array([3.14/2, 1.0]),
-                                save_str=save_dir)
-    print(time.time() - t)
-    print(dataset)
-    traj = dataset['inputs'][10, :]
-    env.plot_trajectory(traj)
-
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
-    ax.scatter(
-        dataset['inputs'][:, :, 0].reshape((-1,1)), 
-        dataset['inputs'][:, :, 1].reshape((-1,1))
-    )
+    state = jnp.array([np.pi/2, 0.0])
+    img = env.render_state(state)
+    plt.imshow(img)
     plt.show()
+
+    img_processed = env.process_image(img, shape=(28, 28), grayscale=True)
+
+    plt.imshow(img_processed)
+    plt.show()
+
+    # save_dir = ('./simulated_data')
+    # t = time.time()
+    # dataset = env.gen_dataset(trajectory_num_steps=500, 
+    #                             num_trajectories=100, 
+    #                             x0_init_lb=jnp.array([-3.14/2, -1.0]),
+    #                             x0_init_ub=jnp.array([3.14/2, 1.0]),
+    #                             save_str=save_dir)
+    # print(time.time() - t)
+    # print(dataset)
+    # traj = dataset['inputs'][10, :]
+    # env.plot_trajectory(traj)
+
+    # fig = plt.figure()
+    # ax = fig.add_subplot(111)
+    # ax.scatter(
+    #     dataset['inputs'][:, :, 0].reshape((-1,1)), 
+    #     dataset['inputs'][:, :, 1].reshape((-1,1))
+    # )
+    # plt.show()
 
 if __name__ == "__main__":
     import time
