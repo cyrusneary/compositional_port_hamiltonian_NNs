@@ -1,5 +1,6 @@
 experiment_name : 'Double spring mass Hamiltonian NODE'
 dataset_setup : 
+  dataset_type : 'trajectory'
   # dataset_file_name : 'Double_Spring_Mass_distances_2022-08-24-11-23-49.pkl'
   train_dataset_file_name : 'Double_Spring_Mass_training_distances_2022-08-26-17-04-36.pkl'
   test_dataset_file_name : 'Double_Spring_Mass_testing_distances_2022-08-26-17-05-19.pkl'

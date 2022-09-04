@@ -1,5 +1,6 @@
 experiment_name: 'regression with mlp'
 dataset_setup : 
+  dataset_type : 'supervised_regression'
   dataset_file_name : 'noisy_linear_dataset.pkl'
   dataset_path : '.'
 model_setup:

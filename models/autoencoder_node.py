@@ -6,10 +6,11 @@ import haiku as hk
 from jax.experimental.ode import odeint
 
 from .helpers import choose_nonlinearity
-
 from .common import get_params_struct
+from .neural_ode import NODE
+from .mlp_autoencoder import MlpAutoencoder
 
-class NODE(object):
+class AutoencoderNODE(NODE):
 
     def __init__(self,
                 rng_key : jax.random.PRNGKey,
@@ -17,6 +18,8 @@ class NODE(object):
                 latent_dim : int,
                 output_dim : int, 
                 dt : float,
+                encoder_setup_params : dict,
+                decoder_setup_params : dict,
                 nn_setup_params : dict, 
                 ):
         """
@@ -30,7 +33,7 @@ class NODE(object):
         input_dim : 
             The input dimension of the system.
         output_dim : 
-            The output dimension of the system.
+            The number of state of the system.
         dt : 
             The amount of time between individual system datapoints.
         nn_setup_params : 
@@ -40,48 +43,17 @@ class NODE(object):
                                 'b_init' : , 'with_bias' : , 
                                 'activation' :, 'activate_final':}.
         """
-        self.rng_key = rng_key
-        self.init_rng_key = rng_key
-        self.input_dim = input_dim
-        self.output_dim = output_dim
-        self.dt = dt
-        self.nn_setup_params = nn_setup_params
+        self.latent_dim = latent_dim
+        self.encoder_setup_params = encoder_setup_params
+        self.decoder_setup_params = decoder_setup_params
 
-        # Initialize the neural network ode.
-        self._build_neural_ode()
-        self.params_shapes, self.count, self.params_tree_struct = \
-            get_params_struct(self.init_params)
-
-    def predict_trajectory(self,
-                            params,
-                            initial_state : np.ndarray,
-                            num_steps : int):
-        """
-        Predict the system trajectory from an initial state.
-        
-        Parameters
-        ----------
-        params :
-            An instantiation of the neural ODE parameters.
-        initial_state :
-            An array representing the system initial state.
-        num_steps : 
-            Number of steps to include in trajectory.
-        """
-        trajectory = np.zeros((num_steps, initial_state.shape[0]))
-        trajectory[0] = initial_state
-
-        # next_state = initial_state
-        # for step in range(1, num_steps):
-        #     next_state = self.forward(params=params, x=next_state)
-        #     trajectory[step, :] = next_state
-
-        next_state = initial_state.reshape((1, len(initial_state)))
-        for step in range(1, num_steps):
-            next_state = self.forward(params=params, x=next_state)
-            trajectory[step, :] = next_state[0]
-
-        return trajectory
+        super().__init__(
+            rng_key=rng_key,
+            input_dim=input_dim,
+            output_dim=output_dim,
+            dt=dt,
+            nn_setup_params=nn_setup_params
+        )
         
     def _build_neural_ode(self):
         """ 
@@ -101,45 +73,54 @@ class NODE(object):
         update :
             A function to update the parameters of the neural ODE.
         """
+        self.rng_key, subkey = jax.random.split(self.rng_key)
+
+        self.autoencoder = MlpAutoencoder(subkey, 
+                                            self.input_dim,
+                                            self.latent_dim,
+                                            self.output_dim, 
+                                            self.encoder_setup_params,
+                                            self.decoder_setup_params)
 
         nn_setup_params = self.nn_setup_params.copy()
+        nn_setup_params['activation'] = \
+            choose_nonlinearity(nn_setup_params['activation'])
 
-        nn_setup_params['activation'] = choose_nonlinearity(nn_setup_params['activation'])
-
-        # if (not 'activation' in nn_setup_params.keys()) or \
-        #     (nn_setup_params['activation'] == 'relu'):
-        #     nn_setup_params['activation'] = jax.nn.relu
-        # elif (nn_setup_params['activation'] == 'tanh'):
-        #     nn_setup_params['activation'] = jax.nn.tanh
-
-        def mlp_forward(x):
+        def node_forward(x):
             return hk.nets.MLP(**nn_setup_params)(x)
 
-        mlp_forward_pure = hk.without_apply_rng(hk.transform(mlp_forward))
+        node_forward = hk.without_apply_rng(hk.transform(node_forward))
 
         self.rng_key, subkey = jax.random.split(self.rng_key)
-        init_params = mlp_forward_pure.init(rng=subkey, x=jnp.zeros((self.input_dim,)))
+        init_node_params = node_forward.init(rng=subkey, x=jnp.zeros((self.latent_dim,)))
 
         def forward(params, x):
+            # Encode the input.
+            z = self.autoencoder.encoder(params['encoder_params'], x)
 
+            # Integrate the neural ODE in time.
             def f_approximator(x, t=0):
-                return mlp_forward_pure.apply(params=params, x=x)
+                return node_forward.apply(params=params['node_params'], x=x)
 
-            k1 = f_approximator(x)
-            k2 = f_approximator(x + self.dt/2 * k1)
-            k3 = f_approximator(x + self.dt/2 * k2)
-            k4 = f_approximator(x + self.dt * k3)
+            k1 = f_approximator(z)
+            k2 = f_approximator(z + self.dt/2 * k1)
+            k3 = f_approximator(z + self.dt/2 * k2)
+            k4 = f_approximator(z + self.dt * k3)
 
-            out = x + self.dt/6 * (k1 + 2 * k2 + 2 * k3 + k4)
+            out_z = z + self.dt/6 * (k1 + 2 * k2 + 2 * k3 + k4)
 
-            return out
-
-            # t = jnp.array([0.0, self.dt])
-            # out = odeint(f_approximator, x, t)
-            # return out[-1,:]
+            # Return the decoded output.
+            return self.autoencoder.decoder(params['decoder_params'], out_z)
 
         forward = jax.jit(forward)
 
-        self.init_params = init_params
+        self.init_node_params = init_node_params
+        self.init_encoder_params = self.autoencoder.init_encoder_params
+        self.init_decoder_params = self.autoencoder.init_decoder_params
+        self.init_params = {
+            'node_params' : self.init_node_params,
+            'encoder_params' : self.init_encoder_params,
+            'decoder_params' : self.init_decoder_params
+        }
         self.forward = forward
-        self.vector_field = mlp_forward_pure
+        self.node_forward = node_forward

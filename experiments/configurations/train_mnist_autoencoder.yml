@@ -1,5 +1,6 @@
 experiment_name: 'autoencoder_mnist'
 dataset_setup : 
+  dataset_type : 'mnist'
   dataset_file_name : 'mnist'
   train_test_split_percentage : 0.8
 model_setup:

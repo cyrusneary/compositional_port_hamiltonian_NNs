@@ -1,6 +1,7 @@
 import random
 import jax
 import jax.numpy as jnp
+import numpy as np
 from jax import grad, vmap, jit
 from jax.experimental.ode import odeint
 
@@ -58,6 +59,10 @@ class PendulumEnv(Environment):
         self._l = l
         self._g = g
 
+        self.screen = None
+        self.screen_dim = 500
+        self.clock = None
+
         self.config = {
             'dt' : dt,
             'm' : m,
@@ -82,19 +87,16 @@ class PendulumEnv(Environment):
         """
         Plot a particular trajectory.
         """
-
-        current_state_ind = 0
-
         fig = plt.figure(figsize=(20,10))
 
-        theta = trajectory[current_state_ind, :, 0]
+        theta = trajectory[:, 0]
         ax = fig.add_subplot(211)
         ax.plot(theta, linewidth=linewidth)
         ax.set_ylabel(r'$\theta$ $[rad]$', fontsize=fontsize)
         ax.set_xlabel('Time $[s]$', fontsize=fontsize)
         ax.grid()
 
-        theta_dot = trajectory[current_state_ind, :, 2]
+        theta_dot = trajectory[:, 1]
         ax = fig.add_subplot(212)
         ax.plot(theta_dot, linewidth=linewidth)
         ax.set_ylabel(r'$\dot{\theta}$ $[\frac{rad}{s}]$', fontsize=fontsize)
@@ -103,20 +105,108 @@ class PendulumEnv(Environment):
 
         plt.show()
 
+    def render_state(self, 
+                    state : jnp.ndarray):
+        """
+        Render the current state of the system.
+        Credit for this visualization code goes to the openAI gym pendulum environment.
+        https://github.com/openai/gym/blob/master/gym/envs/classic_control/pendulum.py
+        """
+        
+        theta, theta_dot = state
+
+        import pygame
+        from pygame import gfxdraw
+
+        if self.screen is None:
+            pygame.init()
+            self.screen = pygame.Surface((self.screen_dim, self.screen_dim))
+        if self.clock is None:
+            self.clock = pygame.time.Clock()
+
+        self.surf = pygame.Surface((self.screen_dim, self.screen_dim))
+        self.surf.fill((255, 255, 255))
+
+        bound = 2.2
+        scale = self.screen_dim / (bound * 2)
+        offset = self.screen_dim // 2
+
+        rod_length = 1 * scale
+        rod_width = 0.2 * scale
+        l, r, t, b = 0, rod_length, rod_width / 2, -rod_width / 2
+        coords = [(l, b), (l, t), (r, t), (r, b)]
+        transformed_coords = []
+        for c in coords:
+            c = pygame.math.Vector2(c).rotate_rad(-state[0] - np.pi / 2)
+            c = (c[0] + offset, c[1] + offset)
+            transformed_coords.append(c)
+        gfxdraw.aapolygon(self.surf, transformed_coords, (204, 77, 77))
+        gfxdraw.filled_polygon(self.surf, transformed_coords, (204, 77, 77))
+
+        gfxdraw.aacircle(self.surf, offset, offset, int(rod_width / 2), (204, 77, 77))
+        gfxdraw.filled_circle(
+            self.surf, offset, offset, int(rod_width / 2), (204, 77, 77)
+        )
+
+        rod_end = (rod_length, 0)
+        rod_end = pygame.math.Vector2(rod_end).rotate_rad(-state[0] - np.pi / 2)
+        rod_end = (int(rod_end[0] + offset), int(rod_end[1] + offset))
+        gfxdraw.aacircle(
+            self.surf, rod_end[0], rod_end[1], int(rod_width / 2), (204, 77, 77)
+        )
+        gfxdraw.filled_circle(
+            self.surf, rod_end[0], rod_end[1], int(rod_width / 2), (204, 77, 77)
+        )
+
+        # drawing axle
+        gfxdraw.aacircle(self.surf, offset, offset, int(0.05 * scale), (0, 0, 0))
+        gfxdraw.filled_circle(self.surf, offset, offset, int(0.05 * scale), (0, 0, 0))
+
+        self.surf = pygame.transform.flip(self.surf, False, True)
+        self.screen.blit(self.surf, (0, 0))
+
+        return np.transpose(
+            np.array(pygame.surfarray.pixels3d(self.screen)), axes=(1, 0, 2)
+        )
+
+    def downsample_image(self, 
+                        image : jnp.ndarray, 
+                        scale : int = 2):
+        """
+        Downsample an image by a scale factor.
+        """
+        return image[::scale, ::scale, :]
+
+        # X = X[...,0][440:-220,330:-330] - X[...,1][440:-220,330:-330]
+        # return scipy.misc.imresize(X, [int(side), side]) / 255.
+
 def main():
     env = PendulumEnv(dt=0.01)
 
+    # state = jnp.array([0.0, 0.0])
+    # img = env.render_state(state)
+    # plt.imshow(img)
+    # plt.show()
+
     save_dir = ('./simulated_data')
     t = time.time()
-    dataset = env.gen_dataset(trajectory_num_steps=50, 
-                                num_trajectories=500, 
-                                x0_init_lb=jnp.array([-3.14/4, -1.0]),
-                                x0_init_ub=jnp.array([3.14/4, 1.0]),
+    dataset = env.gen_dataset(trajectory_num_steps=500, 
+                                num_trajectories=100, 
+                                x0_init_lb=jnp.array([-3.14/2, -1.0]),
+                                x0_init_ub=jnp.array([3.14/2, 1.0]),
                                 save_str=save_dir)
     print(time.time() - t)
     print(dataset)
-    # traj = dataset['training_dataset'][10, :]
-    # env.plot_trajectory(traj)
+    traj = dataset['inputs'][10, :]
+    env.plot_trajectory(traj)
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.scatter(
+        dataset['inputs'][:, :, 0].reshape((-1,1)), 
+        dataset['inputs'][:, :, 1].reshape((-1,1))
+    )
+    plt.show()
 
 if __name__ == "__main__":
     import time
