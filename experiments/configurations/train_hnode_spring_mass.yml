@@ -2,8 +2,10 @@ experiment_name : 'spring mass Hamiltonian NODE'
 dataset_setup : 
   dataset_type : 'trajectory'
   # dataset_file_name : 'Spring_Mass_2022-08-11-17-22-10.pkl'
-  train_dataset_file_name : 'Spring_Mass_training_2022-08-26-17-16-00.pkl'
-  test_dataset_file_name : 'Spring_Mass_testing_2022-08-26-17-16-40.pkl'
+  # train_dataset_file_name : 'Spring_Mass_training_2022-08-26-17-16-00.pkl'
+  # test_dataset_file_name : 'Spring_Mass_testing_2022-08-26-17-16-40.pkl'
+  train_dataset_file_name : 'Spring_Mass_training_2022-09-04-18-35-03.pkl'
+  test_dataset_file_name : 'Spring_Mass_testing_2022-09-04-18-35-57.pkl'
   dataset_path : '../environments/simulated_data'
 model_setup:
   model_type : 'hnode'

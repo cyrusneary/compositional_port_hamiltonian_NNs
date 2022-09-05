@@ -164,18 +164,19 @@ class MassSpring(Environment):
         plt.show()
 
 def main():
-    env = MassSpring(dt=0.01, m=1., k=1., b=0.0, random_seed=19)
+    env = MassSpring(dt=0.01, m=1., k=1., b=0.0, random_seed=21)
 
     curdir = os.path.abspath(os.path.curdir)
     save_dir = os.path.abspath(os.path.join(curdir, 'simulated_data'))
     t = time.time()
     dataset = env.gen_dataset(trajectory_num_steps=500, 
-                                num_trajectories=100, 
+                                num_trajectories=200, 
                                 x0_init_lb=jnp.array([-1.0, -1.0]),
                                 x0_init_ub=jnp.array([1.0, 1.0]),
                                 save_str=save_dir,)
     print(time.time() - t)
-    traj = dataset['inputs'][0, :, :]
+    traj = dataset['state_trajectories'][0, :, :]
+    # traj = dataset['inputs'][0, :, :]
     env.plot_trajectory(traj)
     env.plot_energy(traj)
 

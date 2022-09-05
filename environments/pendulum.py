@@ -109,7 +109,7 @@ class PendulumEnv(Environment):
         plt.show()
 
     def render_state(self, 
-                    state : jnp.ndarray):
+                    state : jnp.ndarray) -> np.ndarray:
         """
         Render the current state of the system.
         Credit for this visualization code goes to the openAI gym pendulum environment.
@@ -171,19 +171,6 @@ class PendulumEnv(Environment):
         return np.transpose(
             np.array(pygame.surfarray.pixels3d(self.screen)), axes=(1, 0, 2)
         )
-
-    def process_image(self, 
-                        image : jnp.ndarray, 
-                        shape : tuple,
-                        grayscale : bool = True):
-        """
-        Downsample an image by a scale factor.
-        """
-        downsized = Image.fromarray(image).resize(shape)
-        if grayscale:
-            return np.array(ImageOps.grayscale(downsized)) / 255
-        else:
-            return np.array(downsized) / 255
 
 def main():
     env = PendulumEnv(dt=0.01)

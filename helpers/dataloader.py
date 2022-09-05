@@ -89,8 +89,19 @@ class TrajectoryDataLoader(DataLoader):
             test_dataset_file_name = self.dataset_setup['test_dataset_file_name']
         except:
             "Test dataset file name not specified in dataset_setup dictionary."
-        train_dataset = self.load_trajectories_from_pickle(dataset_path, train_dataset_file_name)
-        test_dataset = self.load_trajectories_from_pickle(dataset_path, test_dataset_file_name)
+        train_trajectories = self.load_trajectories_from_pickle(dataset_path, train_dataset_file_name)
+        test_trajectories = self.load_trajectories_from_pickle(dataset_path, test_dataset_file_name)
+
+        train_dataset = {
+            'inputs' : train_trajectories['state_trajectories'][:, :-1, :],
+            'outputs' : train_trajectories['state_trajectories'][:, 1:, :],
+        }
+
+        test_dataset = {
+            'inputs' : test_trajectories['state_trajectories'][:, :-1, :],
+            'outputs' : test_trajectories['state_trajectories'][:, 1:, :]
+        }
+
         train_dataset = self.reshape_dataset(train_dataset)
         print('Train dataset input shape: {}'.format(train_dataset['inputs'].shape))
         print('Train dataset output shape: {}'.format(train_dataset['outputs'].shape))
@@ -189,7 +200,14 @@ class TrajectoryMultiModelDataLoader(TrajectoryDataLoader):
 
         train_dataset = []
         for i in range(len(train_dataset_file_name)):
-            dset = self.load_trajectories_from_pickle(dataset_path, train_dataset_file_name[i])
+            dset_trajectories = self.load_trajectories_from_pickle(
+                                        dataset_path, 
+                                        train_dataset_file_name[i]
+                                    )
+            dset = {
+                'inputs' : dset_trajectories['state_trajectories'][:, :-1, :],
+                'outputs' : dset_trajectories['state_trajectories'][:, 1:, :],
+            }
             dset = self.reshape_dataset(dset)
             train_dataset.append(dset)
             print('Train dataset {} input shape: {}'.format(i, dset['inputs'].shape))
@@ -199,12 +217,29 @@ class TrajectoryMultiModelDataLoader(TrajectoryDataLoader):
             test_dataset_file_name = self.dataset_setup['test_dataset_file_name']
         except:
             "Test dataset file name not specified in dataset_setup dictionary."
-        test_dataset = self.load_trajectories_from_pickle(dataset_path, test_dataset_file_name)
+        test_trajectories = self.load_trajectories_from_pickle(dataset_path, test_dataset_file_name)
+        test_dataset = {
+            'inputs' : test_trajectories['state_trajectories'][:, :-1, :],
+            'outputs' : test_trajectories['state_trajectories'][:, 1:, :]
+        }
         test_dataset = self.reshape_dataset(test_dataset)
         print('Test dataset input shape: {}'.format(test_dataset['inputs'].shape))
         print('Test dataset output shape: {}'.format(test_dataset['outputs'].shape))
 
         return train_dataset, test_dataset
+
+class PixelTrajectoryDataLoader(TrajectoryDataLoader):
+
+    def __init__(self, 
+                dataset_setup : dict) -> None:
+        super().__init__(dataset_setup)
+
+    def load_dataset(self) -> dict:
+        """
+        Load the dataset of images.
+        """
+        pass
+
 
 dataloader_factory = {
     'trajectory': TrajectoryDataLoader,

@@ -227,33 +227,26 @@ class DoubleMassSpring(Environment):
         plt.show()
 
 def main():
-    # env = DoubleMassSpring(dt=0.01, random_seed=19, state_measure_spring_elongation=False)
-    # init_state = jnp.array([1.0, 2.0, 1.0, 0.0])
-
-    env = DoubleMassSpring(dt=0.01, random_seed=19, state_measure_spring_elongation=True)
-    init_state = jnp.array([0.0, 0.0, 1.0, 0.0])
+    env = DoubleMassSpring(dt=0.01, random_seed=21, state_measure_spring_elongation=False)
 
     curdir = os.path.abspath(os.path.curdir)
     save_dir = os.path.abspath(os.path.join(curdir, 'simulated_data'))
 
     t = time.time()
-    dataset = env.gen_dataset(trajectory_num_steps=500, 
-                                num_trajectories=100, # 500 training, 100 testing
-                                x0_init_lb=jnp.array([-0.2, -0.2, -0.5, -0.5]),
-                                x0_init_ub=jnp.array([0.2, 0.2, 0.5, 0.5]),
-                                save_str=save_dir)
     # dataset = env.gen_dataset(trajectory_num_steps=500, 
-    #                             num_training_trajectories=500, 
-    #                             num_testing_trajectories=100,
-    #                             save_str=save_dir,
-    #                             training_x0_init_lb=jnp.array([0.8, 1.6, -0.5, -0.5]),
-    #                             training_x0_init_ub=jnp.array([1.2, 2.4, 0.5, 0.5]),
-    #                             testing_x0_init_lb=jnp.array([0.8, 1.6, -0.5, -0.5]),
-    #                             testing_x0_init_ub=jnp.array([1.2, 2.4, 0.5, 0.5]),)
+    #                             num_trajectories=1000, # 500 training, 100 testing
+    #                             x0_init_lb=jnp.array([-0.2, -0.2, -0.5, -0.5]),
+    #                             x0_init_ub=jnp.array([0.2, 0.2, 0.5, 0.5]),
+    #                             save_str=save_dir)
+    dataset = env.gen_dataset(trajectory_num_steps=500, 
+                                num_trajectories=200, 
+                                x0_init_lb=jnp.array([0.8, 1.6, -0.5, -0.5]),
+                                x0_init_ub=jnp.array([1.2, 2.4, 0.5, 0.5]),
+                                save_str=save_dir)
 
     print(time.time() - t)
     print(dataset.keys())
-    traj = dataset['inputs'][0, :, :]
+    traj = dataset['state_trajectories'][0, :, :]
     env.plot_trajectory(traj)
     env.plot_energy(traj)
 
