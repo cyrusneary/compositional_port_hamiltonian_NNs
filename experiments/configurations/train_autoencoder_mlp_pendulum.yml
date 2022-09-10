@@ -1,0 +1,28 @@
+experiment_name: 'autoencoder_mlp_pendulum'
+dataset_setup : 
+  dataset_type : 'pixel_trajectory'
+  num_history_per_obs : 2
+  train_dataset_file_name : 'pendulum_pixel_training_2022-09-05-14-36-41.pkl'
+  test_dataset_file_name : 'pendulum_pixel_testing_2022-09-05-14-38-28.pkl'
+  dataset_path : '../environments/simulated_data'
+model_setup:
+  model_type: 'autoencoder_mlp'
+  input_dim: 1568 # 28 * 28 * 2
+  latent_dim : 2
+  output_dim: 784 # 28 * 28
+  encoder_setup_params:
+    output_sizes: [256, 256, 256, 2]
+    activation: 'leaky_relu'
+    residual_connections : False
+  decoder_setup_params:
+    output_sizes: [256, 256, 256, 784]
+    activation: 'leaky_relu'
+    residual_connections : False
+trainer_setup:
+  trainer_type: 'sgd'
+  num_training_steps: 25000
+  minibatch_size: 32
+  pen_l2_nn_params: !!float 1e-6
+  optimizer_setup:
+    name: adam
+    learning_rate : !!float 1e-4

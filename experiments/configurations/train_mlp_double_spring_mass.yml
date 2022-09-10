@@ -1,0 +1,21 @@
+experiment_name : 'Double spring mass MLP'
+dataset_setup : 
+  dataset_type : 'trajectory'
+  train_dataset_file_name : 'Double_Spring_Mass_training_distances_2022-09-04-18-48-37.pkl'
+  test_dataset_file_name : 'Double_Spring_Mass_testing_distances_2022-09-04-18-49-55.pkl'
+  dataset_path : '../environments/simulated_data'
+model_setup:
+  model_type : 'mlp'
+  input_dim : 4
+  output_dim: 4
+  nn_setup_params:
+      output_sizes: [32, 32, 4]
+      activation: 'tanh'
+trainer_setup:
+  trainer_type: 'sgd'
+  num_training_steps: 10000
+  minibatch_size: 32
+  pen_l2_nn_params: 1e-12
+  optimizer_setup:
+    name: 'adam'
+    learning_rate : !!float 1e-4

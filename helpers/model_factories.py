@@ -9,6 +9,7 @@ from models.neural_ode import NODE
 from models.hamiltonian_neural_ode import HNODE
 from models.ph_node import PHNODE
 from models.mlp_autoencoder import MlpAutoencoder
+from models.autoencoder_node import AutoencoderNODE
 
 import jax
 
@@ -78,14 +79,41 @@ class AutoencoderFactory(ModelFactory):
                                 encoder_setup_params=self.model_setup['encoder_setup_params'],
                                 decoder_setup_params=self.model_setup['decoder_setup_params'])
 
+class AutoencoderNodeFactory(ModelFactory):
+    """Factory that creates an autoencoder Neural ODE."""
+
+    def create_model(self, seed) -> AutoencoderNODE:
+        return AutoencoderNODE(
+            rng_key=jax.random.PRNGKey(seed),
+            input_dim=self.model_setup['input_dim'],
+            latent_dim=self.model_setup['latent_dim'],
+            output_dim=self.model_setup['output_dim'], 
+            dt=self.model_setup['dt'],
+            encoder_setup_params=self.model_setup['encoder_setup_params'],
+            decoder_setup_params=self.model_setup['decoder_setup_params'],
+            nn_setup_params=self.model_setup['nn_setup_params']
+        )
+
+
 model_factories = {
     'node' : NodeFactory,
     'hnode' : HamiltonianNodeFactory,
     'mlp' : MlpFactory,
     'phnode' : PortHamiltonianNodeFactory,
-    'mlp_autoencoder' : AutoencoderFactory,
+    'autoencoder_mlp' : AutoencoderFactory,
+    'autoencoder_node' : AutoencoderNodeFactory,
 }
 
 def get_model_factory(model_setup):
     factory_name = model_setup['model_type']
     return model_factories[factory_name](model_setup)
+
+def choose_nonlinearity(nonlinearity):
+    if nonlinearity == 'relu':
+        return jax.nn.relu
+    elif nonlinearity == 'tanh':
+        return jax.nn.tanh
+    elif nonlinearity == 'leaky_relu':
+        return jax.nn.leaky_relu
+    else:
+        raise ValueError('Unknown nonlinearity: {}'.format(nonlinearity))

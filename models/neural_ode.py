@@ -5,8 +5,7 @@ import numpy as np
 import haiku as hk
 from jax.experimental.ode import odeint
 
-from .common import get_params_struct
-from .helpers import choose_nonlinearity
+from .common import get_params_struct, choose_nonlinearity
 
 class NODE(object):
 

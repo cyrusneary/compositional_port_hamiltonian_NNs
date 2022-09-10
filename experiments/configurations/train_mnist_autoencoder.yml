@@ -4,23 +4,24 @@ dataset_setup :
   dataset_file_name : 'mnist'
   train_test_split_percentage : 0.8
 model_setup:
-  model_type: 'mlp_autoencoder'
+  model_type: 'autoencoder_mlp'
   input_dim: 64
   latent_dim : 32
   output_dim: 64
   encoder_setup_params:
-    output_sizes: [64, 64, 64, 32]
+    output_sizes: [200, 200, 200, 32]
     activation: 'leaky_relu'
     residual_connections : False
   decoder_setup_params:
-    output_sizes: [64, 64, 64, 64]
+    output_sizes: [200, 200, 200, 64]
     activation: 'leaky_relu'
     residual_connections : False
 trainer_setup:
   trainer_type: 'sgd'
-  num_training_steps: 25000
+  num_training_steps: 50000
   minibatch_size: 32
-  pen_l2_nn_params: !!float 1e-6
+  pen_l2_nn_params: !!float 0.0
   optimizer_setup:
-    name: adam
-    learning_rate : !!float 1e-4
+    name: adamw
+    learning_rate : !!float 1e-5
+    weight_decay : !!float 1e-5

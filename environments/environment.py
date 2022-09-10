@@ -1,4 +1,5 @@
 from abc import abstractmethod
+from time import time
 from tkinter.messagebox import RETRY
 import jax
 import jax.numpy as jnp
@@ -170,6 +171,7 @@ class Environment(object):
 
         # Save the size of the timestep used to simulate the data.
         dataset['config'] = self.config.copy()
+        dataset['pixel_trajectories'] = []
 
         self._rng_key, subkey = jax.random.split(self._rng_key)
         trajectory, _ = self.gen_random_trajectory(subkey, 
@@ -183,8 +185,8 @@ class Environment(object):
             pixel_trajectory = self.get_pixel_trajectory(trajectory, 
                                                         im_shape=im_shape, 
                                                         grayscale=grayscale)
-            dataset['pixel_trajectories'] = jnp.array([pixel_trajectory])
-    
+            dataset['pixel_trajectories'].append(pixel_trajectory)
+
         # training_dataset = jnp.array([jnp.stack((state, next_state), axis=0)])
         for traj_ind in tqdm(range(1, num_trajectories), desc='Generating data'):
             self._rng_key, subkey = jax.random.split(self._rng_key)
@@ -201,10 +203,7 @@ class Environment(object):
                 pixel_trajectory = self.get_pixel_trajectory(trajectory, 
                                                             im_shape=im_shape, 
                                                             grayscale=grayscale)
-                dataset['pixel_trajectories'] = \
-                    jnp.concatenate(
-                        (dataset['pixel_trajectories'], jnp.array([pixel_trajectory])), axis=0
-                    )
+                dataset['pixel_trajectories'].append(pixel_trajectory)
                     
         if save_str is not None:
             assert os.path.isdir(save_str)
@@ -226,8 +225,8 @@ class Environment(object):
         images = []
         for state in state_trajectory:
             im = self.render_state(state)
-            im = self.process_image(im, im_shape, grayscale)
-            images.append(self.render_state(state))
+            im_processed = self.process_image(im, im_shape, grayscale)
+            images.append(im_processed)
         return jnp.array(images)
 
     def process_image(self, 

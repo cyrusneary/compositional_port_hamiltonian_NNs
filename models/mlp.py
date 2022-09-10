@@ -3,9 +3,7 @@ import jax.numpy as jnp
 
 import haiku as hk
 
-from .helpers import choose_nonlinearity
-
-from .common import get_params_struct, get_flat_params, unflatten_params
+from .common import get_params_struct, get_flat_params, unflatten_params, choose_nonlinearity
 
 class MLP(object):
 

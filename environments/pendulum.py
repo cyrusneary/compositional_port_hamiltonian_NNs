@@ -173,28 +173,28 @@ class PendulumEnv(Environment):
         )
 
 def main():
-    env = PendulumEnv(dt=0.01)
+    env = PendulumEnv(dt=0.01, random_seed=24, name='pendulum')
 
-    state = jnp.array([np.pi/2, 0.0])
-    img = env.render_state(state)
-    plt.imshow(img)
-    plt.show()
+    # state = jnp.array([np.pi/2, 0.0])
+    # img = env.render_state(state)
+    # plt.imshow(img)
+    # plt.show()
 
-    img_processed = env.process_image(img, shape=(28, 28), grayscale=True)
+    # img_processed = env.process_image(img, shape=(28, 28), grayscale=True)
 
-    plt.imshow(img_processed)
-    plt.show()
+    # plt.imshow(img_processed)
+    # plt.show()
 
-    # save_dir = ('./simulated_data')
-    # t = time.time()
-    # dataset = env.gen_dataset(trajectory_num_steps=500, 
-    #                             num_trajectories=100, 
-    #                             x0_init_lb=jnp.array([-3.14/2, -1.0]),
-    #                             x0_init_ub=jnp.array([3.14/2, 1.0]),
-    #                             save_str=save_dir)
-    # print(time.time() - t)
-    # print(dataset)
-    # traj = dataset['inputs'][10, :]
+    save_dir = ('./simulated_data')
+    dataset = env.gen_dataset(trajectory_num_steps=100, 
+                                num_trajectories=100, 
+                                x0_init_lb=jnp.array([-3.14/2, -1.0]),
+                                x0_init_ub=jnp.array([3.14/2, 1.0]),
+                                save_str=save_dir,
+                                save_pixel_observations=True,
+                                im_shape=(28,28),
+                                grayscale=True)
+    # traj = dataset['state_trajectories'][0, :, :]
     # env.plot_trajectory(traj)
 
     # fig = plt.figure()
@@ -207,4 +207,6 @@ def main():
 
 if __name__ == "__main__":
     import time
+    # import cProfile
+    # cProfile.run('main()')
     main()

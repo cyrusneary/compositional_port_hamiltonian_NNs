@@ -1,4 +1,5 @@
 from re import T
+from tkinter import E
 import jax
 import numpy as np
 import jax.numpy as jnp
@@ -15,12 +16,15 @@ from sacred import Experiment
 from sacred.observers import FileStorageObserver
 
 # experiment_name = 'MLP Linear Regression' 
-# experiment_name = 'autoencoder mnist'
+experiment_name = 'autoencoder mnist'
+# experiment_name = 'MLP Double Spring Mass'
 # experiment_name = 'Vanilla NODE Spring Mass' 
 # experiment_name = 'Hamiltonian NODE Spring Mass'
 # experiment_name = 'Vanilla NODE Double Spring Mass'
 # experiment_name = 'Hamiltonian NODE Double Spring Mass'
-experiment_name = 'Port Hamiltonian NODE Double Spring Mass'
+# experiment_name = 'Port Hamiltonian NODE Double Spring Mass'
+# experiment_name = 'Autoencoder MLP Pendulum'
+# experiment_name = 'Autoencoder NODE Pendulum'
 
 ex = Experiment(experiment_name)
 
@@ -29,12 +33,15 @@ ex.observers.append(FileStorageObserver('sacred_runs'))
 @ex.config
 def config():
     # ex.add_config('configurations/train_mlp.yml')
-    # ex.add_config('configurations/train_mnist_autoencoder.yml')
+    ex.add_config('configurations/train_mnist_autoencoder.yml')
+    # ex.add_config('configurations/train_mlp_double_spring_mass.yml')
     # ex.add_config('configurations/train_neural_ode_spring_mass.yml')
     # ex.add_config('configurations/train_hnode_spring_mass.yml')
     # ex.add_config('configurations/train_neural_ode_double_spring_mass.yml')
     # ex.add_config('configurations/train_hnode_double_spring_mass.yml')
-    ex.add_config('configurations/train_phnode_double_spring_mass.yml')
+    # ex.add_config('configurations/train_phnode_double_spring_mass.yml')
+    # ex.add_config('configurations/train_autoencoder_mlp_pendulum.yml')
+    # ex.add_config('configurations/train_autoencoder_node_pendulum.yml')
 
 @ex.automain
 def experiment_main(
@@ -46,6 +53,8 @@ def experiment_main(
         _run, 
         _log
     ):
+
+    print("Starting sacred experiment number: {}".format(_run._id))
 
     # Add a more unique experiment identifier
     datetime_experiment_name = \

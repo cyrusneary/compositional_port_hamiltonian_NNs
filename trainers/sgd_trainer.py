@@ -3,6 +3,7 @@ import jax
 import optax
 from functools import partial
 from tqdm import tqdm
+from helpers.optimizer_factories import get_optimizer
 
 class SGDTrainer(object):
     """
@@ -42,12 +43,16 @@ class SGDTrainer(object):
         self._init_trainer(forward)
 
     def _init_optimizer(self):
-        if self.optimizer_setup['name'] == 'adam':
-            self.optimizer = optax.adam(self.optimizer_setup['learning_rate'])
-            self.opt_state = self.optimizer.init(self.params)
-        # Only handling adam for now.
-        else:
-            pass
+        self.optimizer = get_optimizer(self.optimizer_setup)
+        self.opt_state = self.optimizer.init(self.params)
+
+        # self.optimizer = choose_optimizer(self.optimizer_setup['optimizer'])
+        # if self.optimizer_setup['name'] == 'adam':
+        #     self.optimizer = optax.adam(self.optimizer_setup['learning_rate'])
+        #     self.opt_state = self.optimizer.init(self.params)
+        # # Only handling adam for now.
+        # else:
+        #     pass
 
     def _init_trainer(self, forward):
 
@@ -80,7 +85,7 @@ class SGDTrainer(object):
             num_datapoints = x.shape[0]
             data_loss = jnp.sum((out - y)**2) / num_datapoints
             regularization_loss = pen_l2_nn_params * \
-                sum(jnp.sum(jnp.square(p)) for p in jax.tree_leaves(params))
+                sum(jnp.sum(jnp.square(p)) for p in jax.tree_util.tree_leaves(params))
             total_loss = data_loss + regularization_loss
             return total_loss, total_loss
 

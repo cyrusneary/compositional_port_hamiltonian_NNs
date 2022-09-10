@@ -4,9 +4,10 @@ import numpy as np
 
 import haiku as hk
 from jax.experimental.ode import odeint
+import sys
+sys.path.append('..')
 
-from .helpers import choose_nonlinearity
-from .common import get_params_struct
+from .common import get_params_struct, choose_nonlinearity
 from .neural_ode import NODE
 from .mlp_autoencoder import MlpAutoencoder
 
@@ -96,7 +97,7 @@ class AutoencoderNODE(NODE):
 
         def forward(params, x):
             # Encode the input.
-            z = self.autoencoder.encoder(params['encoder_params'], x)
+            z = self.autoencoder.encode(params['encoder_params'], x)
 
             # Integrate the neural ODE in time.
             def f_approximator(x, t=0):
@@ -110,7 +111,7 @@ class AutoencoderNODE(NODE):
             out_z = z + self.dt/6 * (k1 + 2 * k2 + 2 * k3 + k4)
 
             # Return the decoded output.
-            return self.autoencoder.decoder(params['decoder_params'], out_z)
+            return self.autoencoder.decode(params['decoder_params'], out_z)
 
         forward = jax.jit(forward)
 
