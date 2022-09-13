@@ -61,6 +61,27 @@ class DataLoader():
 
         return dataset
 
+class PikcleDataLoader(DataLoader):
+
+    def __init__(self, 
+                dataset_setup : dict) -> None:
+        super().__init__(dataset_setup)
+
+    def load_dataset(self) -> dict:
+        """
+        Load dataset.
+
+        Returns
+        -------
+        dataset : 
+            A dictionary containing the dataset.
+        """
+        dataset = self.load_from_pickle(
+                        self.dataset_setup['dataset_path'],
+                        self.dataset_setup['dataset_file_name']
+                    )
+        return dataset['train_dataset'], dataset['test_dataset']
+
 class MNISTDataLoader(DataLoader):
     """
     Loader for the MNIST dataset from the sklearn library.
@@ -344,6 +365,7 @@ dataloader_factory = {
     'mnist' : MNISTDataLoader,
     'trajectory_multi_model' : TrajectoryMultiModelDataLoader,
     'pixel_trajectory': PixelTrajectoryDataLoader,
+    'pickle_dataset' : PikcleDataLoader,
     # 'supervised_regression': SupervisedRegressionDataLoader,
 }
 
