@@ -1,15 +1,27 @@
 import jax
 import jax.numpy as jnp
+import numpy as np
+
+import haiku as hk
+from jax.experimental.ode import odeint
+
+from .common import get_params_struct, choose_nonlinearity
 
 from .neural_ode import NODE
-from .hamiltonian_neural_ode import HNODE
+
+import sys
+sys.path.append('..')
+
+from helpers.model_factories import get_model_factory
 
 class PHNODE(NODE):
 
     def __init__(self,
                 rng_key : jax.random.PRNGKey,
+                input_dim : int,
+                output_dim : int, 
                 dt : float,
-                model_setup : dict
+                model_setup_params : dict, 
                 ):
         """
         Constructor for the neural ODE.
@@ -19,19 +31,28 @@ class PHNODE(NODE):
         rng_key : 
             A key for random initialization of the parameters of the 
             neural networks.
+        input_dim : 
+            The input dimension of the system.
+        output_dim : 
+            The number of state of the system.
         dt : 
             The amount of time between individual system datapoints.
-        model_setup : 
-            Dictionary containing the details of the model to construct.
+        model_setup_params : 
+            Dictionary containing the setup details for the model.
         """
-        self.model_setup = model_setup.copy()
 
-        self.rng_key = rng_key
-        self.init_rng_key = rng_key
-        self.dt = dt
+        super().__init__(
+            rng_key=rng_key,
+            input_dim=input_dim,
+            output_dim=output_dim,
+            dt=dt,
+            model_setup_params=model_setup_params
+        )
 
         # Initialize the neural network ode.
         self._build_neural_ode()
+        self.params_shapes, self.count, self.params_tree_struct = \
+            get_params_struct(self.init_params)
         
     def _build_neural_ode(self):
         """ 
@@ -52,59 +73,50 @@ class PHNODE(NODE):
             A function to update the parameters of the neural ODE.
         """
 
-        model_setup = self.model_setup.copy()
+        init_params = {}
 
-        self.J = jnp.array(model_setup['J'])
-        self.R = jnp.array(model_setup['R'])
-        self.G = jnp.array(model_setup['G'])
+        # Initialize the Hamiltonian network.
+        nn_setup_params = self.nn_setup_params.copy()
+        nn_setup_params['activation'] = choose_nonlinearity(nn_setup_params['activation'])
 
-        self.num_submodels = model_setup['num_submodels']
+        def H_net_forward(x):
+            return hk.nets.MLP(**nn_setup_params)(x)
 
-        init_params = []
-        submodel_list = []
+        H_net_forward_pure = hk.without_apply_rng(hk.transform(H_net_forward))
 
-        # Instantiate each submodel, each of which is itself a hamiltonian neural ODE.
-        for submodel_ind in range(self.num_submodels):
-            self.rng_key, subkey = jax.random.split(self.rng_key)
+        self.rng_key, subkey = jax.random.split(self.rng_key)
+        init_params['H_net_params'] = H_net_forward_pure.init(rng=subkey, x=jnp.zeros((self.input_dim,)))
 
-            submodel_setup = model_setup['submodel{}_setup'.format(submodel_ind)]
-            nn_setup_params = submodel_setup['nn_setup_params'].copy()
+        # Create the parametrized R matrix.
+        # R = jnp.zeros(J.shape)
+        def R_net_forward(x):
+            return hk.Linear(
+                        output_size=self.output_dim, 
+                        with_bias=False, 
+                        w_init=hk.initializers.Constant(0.0)
+                    )(x)
+        R_net_forward_pure = hk.without_apply_rng(hk.transform(R_net_forward))
 
-            submodel = HNODE(
-                rng_key=subkey,
-                input_dim=submodel_setup['input_dim'],
-                output_dim=submodel_setup['output_dim'],
-                dt=self.dt,
-                nn_setup_params=nn_setup_params
-            )
+        self.rng_key, subkey = jax.random.split(self.rng_key)
+        init_params['R_net_params'] = R_net_forward_pure.init(rng=subkey, x=jnp.zeros((self.input_dim,)))
 
-            submodel_list.append(submodel)
-            init_params.append(submodel.init_params)
+        # Create the J matrix.
+        assert (self.input_dim % 2 == 0)
+        num_states = int(self.input_dim/2)
 
-        # Create a dictionary to be able to separate the state into the 
-        # states relevant to the various submodels.
-        state_slices = {}
-        slice_ind = 0
-        for submodel_ind in range(self.num_submodels):
-            submodel_setup = model_setup['submodel{}_setup'.format(submodel_ind)]
-            state_slices[submodel_ind] = \
-                slice(slice_ind, (slice_ind + submodel_setup['input_dim']))
-            slice_ind = slice_ind + submodel_setup['input_dim']
-
-        def hamiltonian(params, x):
-            output = 0
-            for submodel_ind in range(model_setup['num_submodels']):
-                state = x[state_slices[submodel_ind]]
-                submodel_params = params[submodel_ind]
-                submodel = submodel_list[submodel_ind]
-                output = output + \
-                    submodel.hamiltonian_network.apply(submodel_params, state)
-            return output
-
-        hamiltonian = jax.jit(hamiltonian)
-
+        zeros_shape_num_states = jnp.zeros((num_states, num_states))
+        eye_shape_num_states = jnp.eye(num_states)
+        J_top = jnp.hstack([zeros_shape_num_states, eye_shape_num_states])
+        J_bottom = jnp.hstack([-eye_shape_num_states, zeros_shape_num_states])
+        J = jnp.vstack([J_top, J_bottom])
+        # J = jnp.array([[0.0, 1.0],[-1.0, 0.0]])
+        
         def forward(params, x):
 
+            H_net_params = params['H_net_params']
+            R_net_params = params['R_net_params']
+
+            # Put a jax.vmap around this to fix the R_val thing.
             def f_approximator(x, t=0):
                 """
                 The system dynamics formulated using Hamiltonian mechanics.
@@ -113,9 +125,11 @@ class PHNODE(NODE):
                 # This sum is not a real sum. It is just a quick way to get the
                 # output of the Hamiltonian network into scalar form so that we
                 # can take its gradient.
-                H = lambda x : jnp.sum(hamiltonian(params=params, x=x))
-                dh = jax.vmap(jax.grad(H))(x)
-                return jnp.matmul(self.J - self.R, dh.transpose()).transpose()
+                H = lambda x : jnp.sum(
+                    H_net_forward_pure.apply(params=H_net_params, x=x))
+                dh = jax.grad(H)(x)
+                R_val = R_net_forward_pure.apply(R_net_params, dh)
+                return jnp.matmul(J, dh) - R_val
 
             k1 = f_approximator(x)
             k2 = f_approximator(x + self.dt/2 * k1)
@@ -126,13 +140,9 @@ class PHNODE(NODE):
 
             return out
 
-            # t = jnp.array([0.0, self.dt])
-            # out = odeint(f_approximator, x, t)
-            # return out[-1,:]
-
         forward = jax.jit(forward)
+        forward = jax.vmap(forward, in_axes=(None, 0))
 
-        self.forward = forward
-        self.hamiltonian_network = hamiltonian
-        self.submodel_list = submodel_list
         self.init_params = init_params
+        self.forward = forward
+        self.hamiltonian_network = H_net_forward_pure
