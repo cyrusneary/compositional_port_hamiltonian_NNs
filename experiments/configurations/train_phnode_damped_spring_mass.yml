@@ -1,0 +1,26 @@
+experiment_name : 'damped spring mass port Hamiltonian NODE'
+dataset_setup : 
+  dataset_type : 'trajectory'
+  train_dataset_file_name : 'spring_mass_damped_training_2022-09-12-20-47-13.pkl'
+  test_dataset_file_name : 'spring_mass_damped_testing_2022-09-12-20-48-08.pkl'
+  dataset_path : '../environments/simulated_trajectories'
+model_setup:
+  model_type : 'phnode'
+  input_dim : 2
+  output_dim: 2
+  dt : 0.01
+  H_net_setup:
+    model_type : 'mlp'
+    input_dim : 2
+    output_dim: 1
+    nn_setup_params:
+        output_sizes: [32, 32, 1]
+        activation: 'tanh'
+trainer_setup:
+  trainer_type: 'sgd'
+  num_training_steps: 10000
+  minibatch_size: 32
+  pen_l2_nn_params: 0.0
+  optimizer_setup:
+    name: 'adamw'
+    learning_rate : !!float 1e-4

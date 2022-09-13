@@ -1,15 +1,15 @@
 experiment_name: 'regression with mlp'
 dataset_setup : 
-  dataset_type : 'supervised_regression'
+  dataset_type : 'pickle_dataset'
   dataset_file_name : 'noisy_linear_dataset.pkl'
   dataset_path : '.'
 model_setup:
-    model_type: 'mlp'
-    input_dim: 1
-    output_dim: 1
-    nn_setup_params:
-        output_sizes: [64, 64, 1]
-        activation: 'relu'
+  model_type: 'mlp'
+  input_dim: 1
+  output_dim: 1
+  nn_setup_params:
+      output_sizes: [64, 64, 1]
+      activation: 'relu'
 trainer_setup:
     trainer_type: 'sgd'
     num_training_steps: 2000
