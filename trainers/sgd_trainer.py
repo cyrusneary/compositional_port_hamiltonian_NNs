@@ -58,7 +58,7 @@ class SGDTrainer(object):
 
         pen_l2_nn_params = self.pen_l2_nn_params
 
-        @partial(jax.jit)
+        @jax.jit
         def loss(params, 
                 x : jnp.ndarray, 
                 y : jnp.ndarray) -> jnp.float32:
@@ -81,7 +81,7 @@ class SGDTrainer(object):
             total_loss :
                 The computed loss on the labeled datapoints.
             """
-            out = forward(params=params, x=x)
+            out = forward(params, x)
             num_datapoints = x.shape[0]
             data_loss = jnp.sum((out - y)**2) / num_datapoints
             regularization_loss = pen_l2_nn_params * \

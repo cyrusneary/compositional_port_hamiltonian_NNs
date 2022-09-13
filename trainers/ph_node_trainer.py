@@ -76,7 +76,7 @@ class PHNodeTrainer(object):
             total_loss :
                 The computed loss on the labeled datapoints.
             """
-            out = forward(params=params, x=x)
+            out = forward(params, x)
             num_datapoints = x.shape[0]
             data_loss = jnp.sum((out - y)**2) / num_datapoints
             return data_loss, data_loss
