@@ -25,17 +25,11 @@ class PHNODE(NODE):
 
         Parameters
         ----------
-        rng_key : 
+        rng_key : jax.random.PRNGKey
             A key for random initialization of the parameters of the 
             neural networks.
-        input_dim : 
-            The input dimension of the system.
-        output_dim : 
-            The number of state of the system.
-        dt : 
-            The amount of time between individual system datapoints.
-        model_setup_params : 
-            Dictionary containing the setup details for the model.
+        model_setup : dict
+            A dictionary containing the setup for the model. It should contain
         """
         super().__init__(
             rng_key=rng_key,
@@ -45,24 +39,12 @@ class PHNODE(NODE):
     def _build_neural_ode(self):
         """ 
         This function builds a neural network to directly estimate future state 
-        values. Specifically, it returns a function to estimate next state and a 
-        function to update the network parameters.t
-
-        Outputs
-        -------
-        params :
-            The pytree containing the parameters of the neural ODE.
-        forward :
-            A function that takes a state as input and outputs the predicted 
-            next state.
-        loss :
-            A function that computes the loss of a given collection of datapoints.
-        update :
-            A function to update the parameters of the neural ODE.
+        values. It assigns self.forward(), self.init_params, and self.hamiltonian_network.
         """
 
         init_params = {}
 
+        # Create the hamiltonian network.
         self.rng_key, subkey = jax.random.split(self.rng_key)
         H_net = get_model_factory(self.model_setup['H_net_setup']).create_model(subkey)
         init_params['H_net_params'] = H_net.init_params
@@ -89,7 +71,6 @@ class PHNODE(NODE):
         J_top = jnp.hstack([zeros_shape_num_states, eye_shape_num_states])
         J_bottom = jnp.hstack([-eye_shape_num_states, zeros_shape_num_states])
         J = jnp.vstack([J_top, J_bottom])
-        # J = jnp.array([[0.0, 1.0],[-1.0, 0.0]])
         
         def forward(params, x):
 

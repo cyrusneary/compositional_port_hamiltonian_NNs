@@ -40,22 +40,9 @@ class CompositionalPHNODE(NODE):
     def _build_neural_ode(self):
         """ 
         This function builds a neural network to directly estimate future state 
-        values. Specifically, it returns a function to estimate next state and a 
-        function to update the network parameters.t
-
-        Outputs
-        -------
-        params :
-            The pytree containing the parameters of the neural ODE.
-        forward :
-            A function that takes a state as input and outputs the predicted 
-            next state.
-        loss :
-            A function that computes the loss of a given collection of datapoints.
-        update :
-            A function to update the parameters of the neural ODE.
+        values. It assigns self.forward(), self.hamiltonian_network(), 
+        self.submodel_list, and self.init_params.
         """
-
         model_setup = self.model_setup.copy()
 
         self.J = jnp.array(model_setup['J'])
@@ -73,16 +60,6 @@ class CompositionalPHNODE(NODE):
 
             submodel_setup = model_setup['submodel{}_setup'.format(submodel_ind)]
             submodel = get_model_factory(submodel_setup).create_model(subkey)
-
-            # nn_setup_params = submodel_setup['nn_setup_params'].copy()
-
-            # submodel = HNODE(
-            #     rng_key=subkey,
-            #     input_dim=submodel_setup['input_dim'],
-            #     output_dim=submodel_setup['output_dim'],
-            #     dt=self.dt,
-            #     nn_setup_params=nn_setup_params
-            # )
 
             submodel_list.append(submodel)
             init_params.append(submodel.init_params)

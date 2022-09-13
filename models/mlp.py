@@ -10,9 +10,6 @@ class MLP(object):
     def __init__(self,
                 rng_key : jax.random.PRNGKey,
                 model_setup : dict,
-                # input_dim : int,
-                # output_dim : int, 
-                # nn_setup_params : dict, 
                 model_name : str = 'mlp',
                 ):
         """
@@ -23,26 +20,14 @@ class MLP(object):
         rng_key : 
             A key for random initialization of the parameters of the 
             neural networks.
-        input_dim :
-            The dimension of the network inputs.
-        output_dim : 
-            The dimension of the network outputs.
-        nn_setup_params : 
-            Dictionary containing the parameters of the NN estimating 
-            next state
-            nn_setup_params = {'output_sizes' : , 'w_init' : , 
-                                'b_init' : , 'with_bias' : , 
-                                'activation' :, 'activate_final':}.
-        model_name : 
-            A name for the model of interest. This must be unique as it 
-            is useful to load and save parameters of the model.
+        model_setup :
+            A dictionary containing the parameters for the network.
+        model_name :
+            A name for the model of interest.
         """
 
         self.rng_key = rng_key
         self.init_rng_key = rng_key
-        # self.input_dim = input_dim
-        # self.output_dim = output_dim
-        # self.nn_setup_params = nn_setup_params
 
         self.model_name = model_name
 
@@ -59,20 +44,7 @@ class MLP(object):
     def _build_model(self):
         """ 
         This function builds a neural network to directly estimate future state 
-        values. Specifically, it returns a function to estimate next state and a 
-        function to update the network parameters.t
-
-        Outputs
-        -------
-        params :
-            The pytree containing the parameters of the neural ODE.
-        forward :
-            A function that takes a state as input and outputs the predicted 
-            next state.
-        loss :
-            A function that computes the loss of a given collection of datapoints.
-        update :
-            A function to update the parameters of the neural ODE.
+        values. It assigns self.forward() and self.init_params.
         """
         nn_setup_params = self.nn_setup_params.copy()
         nn_setup_params['activation'] = choose_nonlinearity(nn_setup_params['activation'])

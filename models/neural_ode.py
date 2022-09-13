@@ -25,18 +25,8 @@ class NODE(object):
         rng_key : 
             A key for random initialization of the parameters of the 
             neural networks.
-        input_dim : 
-            The input dimension of the system.
-        output_dim : 
-            The output dimension of the system.
-        dt : 
-            The amount of time between individual system datapoints.
-        nn_setup_params : 
-            Dictionary containing the parameters of the NN estimating 
-            next state
-            nn_setup_params = {'output_sizes' : , 'w_init' : , 
-                                'b_init' : , 'with_bias' : , 
-                                'activation' :, 'activate_final':}.
+        model_setup : 
+            Dictionary containing the setup details for the model.
         """
         self.rng_key = rng_key
         self.init_rng_key = rng_key
@@ -85,20 +75,7 @@ class NODE(object):
     def _build_neural_ode(self):
         """ 
         This function builds a neural network to directly estimate future state 
-        values. Specifically, it returns a function to estimate next state and a 
-        function to update the network parameters.t
-
-        Outputs
-        -------
-        params :
-            The pytree containing the parameters of the neural ODE.
-        forward :
-            A function that takes a state as input and outputs the predicted 
-            next state.
-        loss :
-            A function that computes the loss of a given collection of datapoints.
-        update :
-            A function to update the parameters of the neural ODE.
+        values. It assigns self.forward(), self.init_params, and self.vector_field().
         """
 
         network_setup = self.model_setup['network_setup']
