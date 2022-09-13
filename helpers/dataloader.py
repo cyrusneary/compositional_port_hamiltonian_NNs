@@ -133,11 +133,15 @@ class TrajectoryDataLoader(DataLoader):
             'inputs' : train_trajectories['state_trajectories'][:, :-1, :],
             'outputs' : train_trajectories['state_trajectories'][:, 1:, :],
         }
+        if 'control_inputs' in train_trajectories:
+            train_dataset['control_inputs'] = train_trajectories['control_inputs'][:, :-1, :]
 
         test_dataset = {
             'inputs' : test_trajectories['state_trajectories'][:, :-1, :],
             'outputs' : test_trajectories['state_trajectories'][:, 1:, :]
         }
+        if 'control_inputs' in test_trajectories:
+            test_dataset['control_inputs'] = test_trajectories['control_inputs'][:, :-1, :]
 
         train_dataset = self.reshape_dataset(train_dataset)
         print('Train dataset input shape: {}'.format(train_dataset['inputs'].shape))
@@ -171,6 +175,10 @@ class TrajectoryDataLoader(DataLoader):
 
         dataset['inputs'] = dataset['inputs'].reshape(-1, in_dim)
         dataset['outputs'] = dataset['outputs'].reshape(-1, out_dim)
+
+        if 'control_inputs' in dataset:
+            control_dim = dataset['control_inputs'].shape[-1]
+            dataset['control_inputs'] = dataset['control_inputs'].reshape(-1, control_dim)
 
         return dataset
 
