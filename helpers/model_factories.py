@@ -13,7 +13,7 @@ class ModelFactory():
         self.model_setup = model_setup.copy()
 
     @abstractmethod
-    def create_model(self, seed):
+    def create_model(self, rng_key : jax.random.PRNGKey):
         """
         Instantiate the model object from the model setup parameters.
         To be implemented by child classes.
@@ -22,67 +22,55 @@ class ModelFactory():
 class NodeFactory(ModelFactory):
     """Factory that creates a vanilla neural ODE."""
 
-    def create_model(self, seed):
+    def create_model(self, rng_key : jax.random.PRNGKey):
         """Instantiate a vanilla neural ODE."""
         from models.neural_ode import NODE
-        return NODE(rng_key=jax.random.PRNGKey(seed),
-                    input_dim=self.model_setup['input_dim'],
-                    output_dim=self.model_setup['output_dim'],
-                    dt=self.model_setup['dt'],
-                    nn_setup_params=self.model_setup['nn_setup_params'])
+        return NODE(rng_key=rng_key,
+                    model_setup=self.model_setup)
 
 class HamiltonianNodeFactory(ModelFactory):
     """Factory that creates a Hamiltonian neural ODE."""
 
-    def create_model(self, seed):
+    def create_model(self, rng_key : jax.random.PRNGKey):
         from models.hamiltonian_neural_ode import HNODE
         """Instantiate a hamiltonian neural ODE."""
-        return HNODE(rng_key=jax.random.PRNGKey(seed),
-                        input_dim=self.model_setup['input_dim'],
-                        output_dim=self.model_setup['output_dim'],
-                        dt=self.model_setup['dt'],
-                        nn_setup_params=self.model_setup['nn_setup_params'])
+        return HNODE(rng_key=rng_key,
+                        model_setup=self.model_setup)
 
 class MlpFactory(ModelFactory):
     """Factory that creates a multi-layer perceptron."""
 
-    def create_model(self, seed):
+    def create_model(self, rng_key : jax.random.PRNGKey):
         from models.mlp import MLP
         """Instantiate a multi-layer perceptron."""
-        return MLP(rng_key=jax.random.PRNGKey(seed),
-                input_dim=self.model_setup['input_dim'],
-                output_dim=self.model_setup['output_dim'],
-                nn_setup_params=self.model_setup['nn_setup_params'])
+        return MLP(rng_key=rng_key,
+                model_setup=self.model_setup)
 
 class PortHamiltonianNodeFactory(ModelFactory):
     """Factory that creates a compositional port-Hamiltonian neural ODE."""
 
-    def create_model(self, seed):
+    def create_model(self, rng_key : jax.random.PRNGKey):
         from models.ph_node import PHNODE
         """Instantiate a compositional port-Hamiltonian neural ODE."""
-        return PHNODE(rng_key=jax.random.PRNGKey(seed),
-                        input_dim=self.model_setup['input_dim'],
-                        output_dim=self.model_setup['output_dim'],
-                        dt=self.model_setup['dt'],
-                        nn_setup_params=self.model_setup['nn_setup_params'])
+        return PHNODE(rng_key=rng_key,
+                        model_setup=self.model_setup)
 
 class CompositionalPortHamiltonianNodeFactory(ModelFactory):
     """Factory that creates a port-Hamiltonian nerual ODE."""
     
-    def create_model(self, seed):
+    def create_model(self, rng_key : jax.random.PRNGKey):
         """Instantiate a port-Hamiltonian neural ODE."""
         from models.compositional_ph_node import CompositionalPHNODE
-        return CompositionalPHNODE(rng_key=jax.random.PRNGKey(seed),
-                        dt=self.model_setup['dt'],
+        return CompositionalPHNODE(rng_key=rng_key,
                         model_setup=self.model_setup)
 
 class AutoencoderFactory(ModelFactory):
     """Factory that creates an autoencoder."""
 
-    def create_model(self, seed):
+    def create_model(self, rng_key : jax.random.PRNGKey):
         """Instantiate an autoencoder."""
         from models.mlp_autoencoder import MlpAutoencoder
-        return MlpAutoencoder(rng_key=jax.random.PRNGKey(seed),
+        return MlpAutoencoder(rng_key=rng_key,
                                 input_dim=self.model_setup['input_dim'],
                                 latent_dim=self.model_setup['latent_dim'],
                                 output_dim=self.model_setup['input_dim'],
@@ -92,10 +80,10 @@ class AutoencoderFactory(ModelFactory):
 class AutoencoderNodeFactory(ModelFactory):
     """Factory that creates an autoencoder Neural ODE."""
 
-    def create_model(self, seed):
+    def create_model(self, rng_key : jax.random.PRNGKey):
         from models.autoencoder_node import AutoencoderNODE
         return AutoencoderNODE(
-            rng_key=jax.random.PRNGKey(seed),
+            rng_key=rng_key,
             input_dim=self.model_setup['input_dim'],
             latent_dim=self.model_setup['latent_dim'],
             output_dim=self.model_setup['output_dim'], 
