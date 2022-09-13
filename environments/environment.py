@@ -7,6 +7,10 @@ import numpy as np
 from jax import grad, vmap, jit
 from jax.experimental.ode import odeint
 
+import sys
+sys.path.append('../')
+from helpers.integrator_factory import integrator_factory
+
 from datetime import datetime
 
 import matplotlib.pyplot as plt
@@ -17,6 +21,7 @@ import os
 from functools import partial
 
 from tqdm import tqdm
+
 
 class Environment(object):
     """
@@ -40,15 +45,14 @@ class Environment(object):
                 dt=0.01, 
                 random_seed=42,
                 name = 'environment',
+                integrator_name = 'rk4',
                 ):
         """
         Initialize the double-pendulum environment object.
         """
 
         self._dt = dt
-
         self.name = name
-
         self.config = {
             'dt' : dt,
             'name' : name,
@@ -57,23 +61,79 @@ class Environment(object):
         assert type(random_seed) is int
         self._random_seed = random_seed
         self._rng_key = jax.random.PRNGKey(random_seed)
+        self.integrator = integrator_factory(integrator_name)
 
-    @partial(jax.jit, static_argnums=(0,))
-    def solve_analytical(self, initial_state, times):
+        self.control_policy = lambda state, t, jax_key : jnp.array([0.0])
+
+        self._define_dynamics()
+        self._define_step_function()
+
+    @abstractmethod
+    def _define_dynamics(self):
+        """
+        Define the system dynamics. This method must be implemented by all 
+        child classes. It should define the following functions.
+
+        self.H(state)
+        self.dynamics_function(state, t, control_input)
+        self.step(state, t)
+        """
+        raise NotImplementedError
+
+    def _define_step_function(self):
+
+        def step(
+                state : jnp.ndarray, 
+                t : jnp.float32,
+                jax_key : jax.random.PRNGKey,
+            ):
+            """
+            Take a single timestep of the system dynamics.
+            """
+            key, subkey = jax.random.split(jax_key)
+            control_input = self.control_policy(state, t, subkey)
+
+            key, subkey = jax.random.split(key)
+            f = lambda x, t : self.dynamics_function(state, t, control_input, subkey)
+            
+            next_state = self.integrator(f, state, t, self._dt)
+            return next_state, control_input
+
+        self.step = jax.jit(step)
+
+    def set_control_policy(self, control_policy):
+        """
+        Set the control policy used to generate trajectories.
+
+        Parameters
+        ----------
+        control_policy : 
+            Python function representing the control policy to be used.
+            control_policy(state, t) -> control_input
+        """
+        self.control_policy = control_policy
+
+        # Redefine the dynamics with the new control policy.
+        self._define_dynamics() 
+        self._define_step_function()
+
+    def solve_analytical(self, 
+                        initial_state : jnp.array, 
+                        times : jnp.array):
         """ 
         Given an initial state and a set of time instant, compute a 
         trajectory of the system at each time in the set
         """
-        return odeint(self.dynamics_function,
+        return odeint(self.dynamics_function, 
                         initial_state, 
                         t=times, 
                         rtol=1e-10, 
                         atol=1e-10)
 
-    # @partial(jax.jit, static_argnums=(0,))
     def gen_trajectory(self, 
                         init_state : jnp.array,
-                        trajectory_num_steps : int = 50
+                        trajectory_num_steps : int = 50,
+                        jax_key : jax.random.PRNGKey = None,
                         ) -> tuple:
         """
         Generate an individual system trajectory from a specific initial state.
@@ -96,14 +156,25 @@ class Environment(object):
                                 num=trajectory_num_steps + 1, 
                                 endpoint=False, 
                                 dtype=jnp.float32)
-        xnextVal = self.solve_analytical(init_state, tIndexes)
-        return xnextVal[:-1, :], xnextVal[1:, :]
+        # xnextVal = self.solve_analytical(init_state, tIndexes)
+
+        xnextVal = [init_state]
+        control_inputs = []
+        for t in tIndexes:
+            jax_key, subkey = jax.random.split(jax_key)
+            next_state, control = self.step(xnextVal[-1], t, subkey)
+            control_inputs.append(control)
+            xnextVal.append(next_state)
+
+        xnextVal = jnp.array(xnextVal)
+        control_inputs = jnp.array(control_inputs)
+        return xnextVal, tIndexes, control_inputs
 
     def gen_random_trajectory(self,
                                 rng_key : jax.random.PRNGKey, 
                                 x0_init_lb : jnp.array, 
                                 x0_init_ub : jnp.array, 
-                                trajectory_num_steps : int = 50
+                                trajectory_num_steps : int = 50,
                                 ) -> tuple:
         """
         Generate a system trajectory from a random initial state.
@@ -128,21 +199,26 @@ class Environment(object):
             have a time offset of 1 step.
         """
         shape = x0_init_lb.shape
-        x0val = jax.random.uniform(rng_key, 
+        key, subkey = jax.random.split(rng_key)
+        x0val = jax.random.uniform(subkey, 
                                     shape=shape, 
                                     minval=x0_init_lb, 
                                     maxval=x0_init_ub)
-        return self.gen_trajectory(x0val, trajectory_num_steps)
+
+        key, subkey = jax.random.split(key)
+        return self.gen_trajectory(x0val, 
+                                    trajectory_num_steps,
+                                    jax_key = subkey)
 
     def gen_dataset(self,
-                        x0_init_lb : jnp.array,
-                        x0_init_ub : jnp.array,
-                        trajectory_num_steps : int = 500,
-                        num_trajectories : int = 200,
-                        save_pixel_observations=False,
-                        im_shape : tuple = (28,28),
-                        grayscale : bool = True,
-                        save_str=None):
+                    x0_init_lb : jnp.array,
+                    x0_init_ub : jnp.array,
+                    trajectory_num_steps : int = 500,
+                    num_trajectories : int = 200,
+                    save_pixel_observations=False,
+                    im_shape : tuple = (28,28),
+                    grayscale : bool = True,
+                    save_str=None):
         """
         Generate a dataset of system trajectories with 
         randomly sampled initial points.
@@ -174,12 +250,14 @@ class Environment(object):
         dataset['pixel_trajectories'] = []
 
         self._rng_key, subkey = jax.random.split(self._rng_key)
-        trajectory, _ = self.gen_random_trajectory(subkey, 
-                                                        x0_init_lb, 
-                                                        x0_init_ub, 
-                                                        trajectory_num_steps=\
-                                                            trajectory_num_steps)
+        trajectory, timesteps, control_inputs = self.gen_random_trajectory(subkey, 
+                                                    x0_init_lb, 
+                                                    x0_init_ub, 
+                                                    trajectory_num_steps=\
+                                                        trajectory_num_steps)
         dataset['state_trajectories'] = jnp.array([trajectory])
+        dataset['timesteps'] = jnp.array([timesteps])
+        dataset['control_inputs'] = jnp.array([control_inputs])
 
         if save_pixel_observations:
             pixel_trajectory = self.get_pixel_trajectory(trajectory, 
@@ -190,13 +268,21 @@ class Environment(object):
         # training_dataset = jnp.array([jnp.stack((state, next_state), axis=0)])
         for traj_ind in tqdm(range(1, num_trajectories), desc='Generating data'):
             self._rng_key, subkey = jax.random.split(self._rng_key)
-            trajectory, _ = self.gen_random_trajectory(subkey, 
+            trajectory, timesteps, control_inputs = self.gen_random_trajectory(subkey, 
                                                         x0_init_lb, 
                                                         x0_init_ub, 
                                                         trajectory_num_steps=\
                                                             trajectory_num_steps)
             dataset['state_trajectories'] = jnp.concatenate(
                     (dataset['state_trajectories'], jnp.array([trajectory])), axis=0
+                )
+            dataset['timesteps'] = jnp.concatenate(
+                    (dataset['timesteps'], jnp.array([timesteps])), axis=0
+                )
+            dataset['control_inputs'] = jnp.concatenate(
+                    (dataset['control_inputs'], 
+                    jnp.array([control_inputs])), 
+                    axis=0
                 )
 
             if save_pixel_observations:
@@ -246,10 +332,10 @@ class Environment(object):
     # ABSTRACT METHODS #
     ####################
     @abstractmethod
-    def dynamics_function(self, 
-                    state : jnp.ndarray, 
-                    t: jnp.ndarray=None,
-                    ) -> jnp.ndarray:
+    def dynamics_function(state : jnp.ndarray, 
+                            t: jnp.float32,
+                            control_input : jnp.ndarray
+                            ) -> jnp.ndarray:
         """ 
         To be implemented by the child class.
         """
@@ -265,4 +351,3 @@ class Environment(object):
         """
         To be implemented by the child class.
         """
-        pass
