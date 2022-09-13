@@ -8,10 +8,11 @@ from .common import get_params_struct, get_flat_params, unflatten_params, choose
 class MLP(object):
 
     def __init__(self,
-                rng_key : jax.random.PRNGKey, 
-                input_dim : int,
-                output_dim : int, 
-                nn_setup_params : dict, 
+                rng_key : jax.random.PRNGKey,
+                model_setup : dict,
+                # input_dim : int,
+                # output_dim : int, 
+                # nn_setup_params : dict, 
                 model_name : str = 'mlp',
                 ):
         """
@@ -39,11 +40,16 @@ class MLP(object):
 
         self.rng_key = rng_key
         self.init_rng_key = rng_key
-        self.input_dim = input_dim
-        self.output_dim = output_dim
-        self.nn_setup_params = nn_setup_params
+        # self.input_dim = input_dim
+        # self.output_dim = output_dim
+        # self.nn_setup_params = nn_setup_params
 
         self.model_name = model_name
+
+        self.model_setup = model_setup
+        self.input_dim = model_setup['input_dim']
+        self.output_dim = model_setup['output_dim']
+        self.nn_setup_params = model_setup['nn_setup_params']
 
         # Initialize the neural network ode.
         self._build_model()

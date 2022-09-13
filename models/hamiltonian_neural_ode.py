@@ -9,14 +9,19 @@ from .common import get_params_struct, choose_nonlinearity
 
 from .neural_ode import NODE
 
+import sys
+sys.path.append('..')
+from helpers.model_factories import get_model_factory
+
 class HNODE(NODE):
 
     def __init__(self,
                 rng_key : jax.random.PRNGKey,
-                input_dim : int,
-                output_dim : int, 
-                dt : float,
-                nn_setup_params : dict, 
+                model_setup : dict,
+                # input_dim : int,
+                # output_dim : int, 
+                # dt : float,
+                # nn_setup_params : dict, 
                 ):
         """
         Constructor for the neural ODE.
@@ -39,15 +44,13 @@ class HNODE(NODE):
                                 'b_init' : , 'with_bias' : , 
                                 'activation' :, 'activate_final':}.
         """
-
-        assert nn_setup_params['output_sizes'][-1] == 1, "Hamiltonian network should output a scalar."
-
         super().__init__(
             rng_key=rng_key,
-            input_dim=input_dim,
-            output_dim=output_dim,
-            dt=dt,
-            nn_setup_params=nn_setup_params
+            model_setup=model_setup,
+            # input_dim=input_dim,
+            # output_dim=output_dim,
+            # dt=dt,
+            # nn_setup_params=nn_setup_params
         )
 
         # Initialize the neural network ode.
@@ -74,16 +77,21 @@ class HNODE(NODE):
             A function to update the parameters of the neural ODE.
         """
 
-        nn_setup_params = self.nn_setup_params.copy()
-        nn_setup_params['activation'] = choose_nonlinearity(nn_setup_params['activation'])
-
-        def mlp_forward(x):
-            return hk.nets.MLP(**nn_setup_params)(x)
-
-        mlp_forward_pure = hk.without_apply_rng(hk.transform(mlp_forward))
-
         self.rng_key, subkey = jax.random.split(self.rng_key)
-        init_params = mlp_forward_pure.init(rng=subkey, x=jnp.zeros((self.input_dim,)))
+        H_net = get_model_factory(self.model_setup['H_net_setup']).create_model(subkey)
+        H_net_forward = H_net.forward
+        init_params = H_net.init_params
+
+        # nn_setup_params = self.nn_setup_params.copy()
+        # nn_setup_params['activation'] = choose_nonlinearity(nn_setup_params['activation'])
+
+        # def mlp_forward(x):
+        #     return hk.nets.MLP(**nn_setup_params)(x)
+
+        # mlp_forward_pure = hk.without_apply_rng(hk.transform(mlp_forward))
+
+        # self.rng_key, subkey = jax.random.split(self.rng_key)
+        # init_params = mlp_forward_pure.init(rng=subkey, x=jnp.zeros((self.input_dim,)))
 
         assert (self.input_dim % 2 == 0)
         num_states = int(self.input_dim/2)
@@ -107,7 +115,7 @@ class HNODE(NODE):
                 # This sum is not a real sum. It is just a quick way to get the
                 # output of the Hamiltonian network into scalar form so that we
                 # can take its gradient.
-                H = lambda x : jnp.sum(mlp_forward_pure.apply(params=params, x=x))
+                H = lambda x : jnp.sum(H_net_forward(params, x))
                 dh = jax.vmap(jax.grad(H))(x)
                 return jnp.matmul(J-R, dh.transpose()).transpose()
 
@@ -120,12 +128,8 @@ class HNODE(NODE):
 
             return out
 
-            # t = jnp.array([0.0, self.dt])
-            # out = odeint(f_approximator, x, t)
-            # return out[-1,:]
-
         forward = jax.jit(forward)
 
         self.init_params = init_params
         self.forward = forward
-        self.hamiltonian_network = mlp_forward_pure
+        self.hamiltonian_network = H_net_forward

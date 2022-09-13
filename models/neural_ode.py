@@ -7,15 +7,16 @@ from jax.experimental.ode import odeint
 
 from .common import get_params_struct, choose_nonlinearity
 
+import sys
+sys.path.append('..')
+
+from helpers.model_factories import get_model_factory
+
 class NODE(object):
 
     def __init__(self,
                 rng_key : jax.random.PRNGKey,
-                input_dim : int,
-                output_dim : int, 
-                dt : float,
-                nn_setup_params : dict, 
-                ):
+                model_setup : dict,):
         """
         Constructor for the neural ODE.
 
@@ -39,10 +40,11 @@ class NODE(object):
         """
         self.rng_key = rng_key
         self.init_rng_key = rng_key
-        self.input_dim = input_dim
-        self.output_dim = output_dim
-        self.dt = dt
-        self.nn_setup_params = nn_setup_params
+        self.input_dim = model_setup['input_dim']
+        self.output_dim = model_setup['output_dim']
+        self.dt = model_setup['dt']
+
+        self.model_setup = model_setup.copy()
 
         # Initialize the neural network ode.
         self._build_neural_ode()
@@ -99,21 +101,17 @@ class NODE(object):
             A function to update the parameters of the neural ODE.
         """
 
-        nn_setup_params = self.nn_setup_params.copy()
-        nn_setup_params['activation'] = choose_nonlinearity(nn_setup_params['activation'])
-
-        def mlp_forward(x):
-            return hk.nets.MLP(**nn_setup_params)(x)
-
-        mlp_forward_pure = hk.without_apply_rng(hk.transform(mlp_forward))
-
+        network_setup = self.model_setup['network_setup']
         self.rng_key, subkey = jax.random.split(self.rng_key)
-        init_params = mlp_forward_pure.init(rng=subkey, x=jnp.zeros((self.input_dim,)))
+        network = get_model_factory(network_setup).create_model(subkey)
+
+        init_params = network.init_params
+        network_forward = network.forward
 
         def forward(params, x):
 
             def f_approximator(x, t=0):
-                return mlp_forward_pure.apply(params=params, x=x)
+                return network_forward(params, x)
 
             k1 = f_approximator(x)
             k2 = f_approximator(x + self.dt/2 * k1)
@@ -132,4 +130,4 @@ class NODE(object):
 
         self.init_params = init_params
         self.forward = forward
-        self.vector_field = mlp_forward_pure
+        self.vector_field = network_forward

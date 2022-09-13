@@ -18,10 +18,7 @@ class PHNODE(NODE):
 
     def __init__(self,
                 rng_key : jax.random.PRNGKey,
-                input_dim : int,
-                output_dim : int, 
-                dt : float,
-                model_setup_params : dict, 
+                model_setup : dict, 
                 ):
         """
         Constructor for the neural ODE.
@@ -40,19 +37,10 @@ class PHNODE(NODE):
         model_setup_params : 
             Dictionary containing the setup details for the model.
         """
-
         super().__init__(
             rng_key=rng_key,
-            input_dim=input_dim,
-            output_dim=output_dim,
-            dt=dt,
-            model_setup_params=model_setup_params
+            model_setup=model_setup,
         )
-
-        # Initialize the neural network ode.
-        self._build_neural_ode()
-        self.params_shapes, self.count, self.params_tree_struct = \
-            get_params_struct(self.init_params)
         
     def _build_neural_ode(self):
         """ 
@@ -75,17 +63,9 @@ class PHNODE(NODE):
 
         init_params = {}
 
-        # Initialize the Hamiltonian network.
-        nn_setup_params = self.nn_setup_params.copy()
-        nn_setup_params['activation'] = choose_nonlinearity(nn_setup_params['activation'])
-
-        def H_net_forward(x):
-            return hk.nets.MLP(**nn_setup_params)(x)
-
-        H_net_forward_pure = hk.without_apply_rng(hk.transform(H_net_forward))
-
         self.rng_key, subkey = jax.random.split(self.rng_key)
-        init_params['H_net_params'] = H_net_forward_pure.init(rng=subkey, x=jnp.zeros((self.input_dim,)))
+        H_net = get_model_factory(self.model_setup['H_net_setup']).create_model(subkey)
+        init_params['H_net_params'] = H_net.init_params
 
         # Create the parametrized R matrix.
         # R = jnp.zeros(J.shape)
@@ -126,7 +106,7 @@ class PHNODE(NODE):
                 # output of the Hamiltonian network into scalar form so that we
                 # can take its gradient.
                 H = lambda x : jnp.sum(
-                    H_net_forward_pure.apply(params=H_net_params, x=x))
+                    H_net.forward(params=H_net_params, x=x))
                 dh = jax.grad(H)(x)
                 R_val = R_net_forward_pure.apply(R_net_params, dh)
                 return jnp.matmul(J, dh) - R_val
@@ -145,4 +125,4 @@ class PHNODE(NODE):
 
         self.init_params = init_params
         self.forward = forward
-        self.hamiltonian_network = H_net_forward_pure
+        self.hamiltonian_network = H_net

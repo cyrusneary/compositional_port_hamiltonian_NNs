@@ -4,12 +4,16 @@ import jax.numpy as jnp
 from .neural_ode import NODE
 from .hamiltonian_neural_ode import HNODE
 
+import sys
+sys.path.append('..')
+
+from helpers.model_factories import get_model_factory
+
 class CompositionalPHNODE(NODE):
 
     def __init__(self,
                 rng_key : jax.random.PRNGKey,
-                dt : float,
-                model_setup : dict
+                model_setup : dict,
                 ):
         """
         Constructor for the neural ODE.
@@ -28,7 +32,7 @@ class CompositionalPHNODE(NODE):
 
         self.rng_key = rng_key
         self.init_rng_key = rng_key
-        self.dt = dt
+        self.dt = model_setup['dt']
 
         # Initialize the neural network ode.
         self._build_neural_ode()
@@ -68,15 +72,17 @@ class CompositionalPHNODE(NODE):
             self.rng_key, subkey = jax.random.split(self.rng_key)
 
             submodel_setup = model_setup['submodel{}_setup'.format(submodel_ind)]
-            nn_setup_params = submodel_setup['nn_setup_params'].copy()
+            submodel = get_model_factory(submodel_setup).create_model(subkey)
 
-            submodel = HNODE(
-                rng_key=subkey,
-                input_dim=submodel_setup['input_dim'],
-                output_dim=submodel_setup['output_dim'],
-                dt=self.dt,
-                nn_setup_params=nn_setup_params
-            )
+            # nn_setup_params = submodel_setup['nn_setup_params'].copy()
+
+            # submodel = HNODE(
+            #     rng_key=subkey,
+            #     input_dim=submodel_setup['input_dim'],
+            #     output_dim=submodel_setup['output_dim'],
+            #     dt=self.dt,
+            #     nn_setup_params=nn_setup_params
+            # )
 
             submodel_list.append(submodel)
             init_params.append(submodel.init_params)
@@ -98,7 +104,7 @@ class CompositionalPHNODE(NODE):
                 submodel_params = params[submodel_ind]
                 submodel = submodel_list[submodel_ind]
                 output = output + \
-                    submodel.hamiltonian_network.apply(submodel_params, state)
+                    submodel.hamiltonian_network(submodel_params, state)
             return output
 
         hamiltonian = jax.jit(hamiltonian)
