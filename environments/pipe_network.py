@@ -22,143 +22,104 @@ from environment import Environment
 class PipeNetwork(Environment):
     """
     Object representing a pipe network's dynamics.
-
-    Parameters
-    ----------
-    dt :
-        The timestep used to simulate the system dynamics.
-    random_seed : 
-        Manually set the random seed used to generate initial states.
-    m1 :
-        The mass of mass 1 [kg].
-    k1 : 
-        The spring constant of spring 1 [N/m].
-    y1 :
-        The unstretched length of spring 1 [m].
-    b1 :
-        The damping coefficient on mass 1 [Ns/m].
-    m2 :
-        The mass of mass 2 [kg].
-    k2 : 
-        The spring constant of spring 2 [N/m].
-    y2 :
-        The unstretched length of spring 2 [m].
-    b2 :
-        The damping coefficient on mass 2 [Ns/m].
-    name : 
-        The name of the environment.
     """
 
     def __init__(self, 
+                incidence_matrix : jnp.ndarray,
+                tank_footprints : jnp.ndarray,
+                pipe_areas : jnp.ndarray,
+                pipe_disspipations : jnp.ndarray = None,
+                rho : jnp.float32 = 1,
+                g : jnp.float32 = 9.81,
                 dt=0.01, 
                 random_seed=42,
-                m1 : jnp.float32 = 1, 
-                k1 : jnp.float32 = 1, 
-                y1 : jnp.float32 = 1,
-                b1 : jnp.float32 = 0.0,
-                m2 : jnp.float32 = 1,
-                k2 : jnp.float32 = 1,
-                y2 : jnp.float32 = 1,
-                b2 : jnp.float32 = 0.0,
                 name : str = 'pipe_network',
                 ):
         """
-        Initialize the double-pendulum environment object.
+        Initialize the pipe environment object.
+
+        Parameters
+        ----------
+        incidence_matrix : jnp.ndarray
+            The incidence matrix of the pipe network.
+        tank_footprints : jnp.ndarray
+            The footprint of each tank in the pipe network.
+        pipe_areas : jnp.ndarray
+            The area of each pipe in the pipe network.
+        pipe_dissipations : jnp.ndarray
+            The dissipation of each pipe in the pipe network.
+        rho : jnp.float32
+            The density of the fluid in the pipe network.
+        g : jnp.float32
+            The gravitational constant.
+        dt :
+            The timestep used to simulate the system dynamics.
+        random_seed : 
+            Manually set the random seed used to generate initial states.
+        name : 
+            The name of the environment.
         """
-
         super().__init__(dt=dt, random_seed=random_seed, name=name)
-        
-        self.m1 = m1
-        self.k1 = k1
-        self.y1 = y1
-        self.b1 = b1
 
-        self.m2 = m2
-        self.k2 = k2
-        self.y2 = y2
-        self.b2 = b2
+        self.incidence_matrix = incidence_matrix
+        self.num_tanks = incidence_matrix.shape[0]
+        self.num_pipes = incidence_matrix.shape[1]
+        assert self.num_tanks == tank_footprints.shape[0], \
+            "The number of tanks must match the number of provided tank footprints."
+        assert self.num_pipes == pipe_areas.shape[0], \
+            "The number of pipes must match the number of provided pipe areas."
+        if pipe_disspipations is not None:
+            assert self.num_pipes == pipe_disspipations.shape[0], \
+                "The number of pipes must match the number of provided pipe dissipation coefficients."
+            self.pipe_dissipations = pipe_disspipations
+        else:
+            self.pipe_dissipations = jnp.zeros(self.num_pipes)
+        self.tank_footprints = tank_footprints
+        self.pipe_areas = pipe_areas
+
+        self.rho = rho
+        self.g = g
 
         self.config = {
             'dt' : dt,
-            'm1' : m1,
-            'k1' : k1,
-            'y1' : y1,
-            'b1' : b1,
-            'm2' : m2,
-            'k2' : k2,
-            'y2' : y2,
-            'b2' : b2,
+            'rho' : rho,
+            'g' : g,
             'name' : name,
         }
 
-    def PE(self, q, p):
-        """
-        The system's potential energy.
-        """
-        if self.state_measure_spring_elongation:
-            return 1/2 * self.k1 * q[0]**2 + 1/2 * self.k2 * q[1]**2
-        else:
-            return 1/2 * self.k1 * (q[0] - self.y1)**2 + 1/2 * self.k2 * ((q[1] - q[0]) - self.y2)**2
-
-    def KE(self, q, p):
+    def KE(self, state):
         """
         The system's kinetic energy.
         """
-        return p[0]**2 / (2 * self.m1) + p[1]**2 / (2 * self.m2)
+        phi = state[0:self.num_pipes]
+        return 1/2 * jnp.sum(jnp.divide(phi**2, self.pipe_areas))
 
-    def H(self, q, p):
+    def PE(self, state):
+        """
+        The system's potential energy.
+        """
+        mu = state[self.num_pipes::]
+        return self.g * self.rho / 2 * jnp.sum(jnp.divide(mu**2, self.tank_footprints))
+
+    def H(self, state):
         """
         The system's Hamiltonian.
         """
-        return self.KE(q,p) + self.PE(q,p)
+        return self.KE(state) + self.PE(state)
 
     @partial(jax.jit, static_argnums=0)
-    def hamiltonian_dynamics(self, 
-                                state : jnp.ndarray, 
-                                t: jnp.ndarray=None,
-                                ) -> jnp.ndarray:
+    def dynamics_function(self, 
+                state : jnp.ndarray, 
+                t: jnp.ndarray=None,
+                ) -> jnp.ndarray:
         """
         The system dynamics formulated using Hamiltonian mechanics.
         """
-        q = state[0:2]
-        p = state[2:4]
-        dh_dq = jax.grad(self.H, argnums=0)(q,p)
-        dh_dp = jax.grad(self.H, argnums=1)(q,p)
-        dh = jnp.hstack([dh_dq, dh_dp]).transpose()
+        dh = jax.grad(self.H)(state)
         
-        if self.state_measure_spring_elongation:
-            J = jnp.array([[0.0, 0.0, 1.0, 0.0], 
-                            [0.0, 0.0, -1.0, 1.0], 
-                            [-1.0, 1.0, 0.0, 0.0], 
-                            [0.0, -1.0, 0.0, 0.0]])
-        else:
-            J = jnp.array([[0.0, 0.0, 1.0, 0.0], 
-                            [0.0, 0.0, 0.0, 1.0], 
-                            [-1.0, 0.0, 0.0, 0.0], 
-                            [0.0, -1.0, 0.0, 0.0]])
-        R = jnp.zeros(J.shape)
-        return jnp.matmul(J - R, dh)
+        R = jnp.diag(self.pipe_dissipations)
 
-    @partial(jax.jit, static_argnums=(0,))
-    def dynamics_function(self, 
-                    state : np.ndarray, 
-                    t: np.ndarray=None,
-                    ) -> np.ndarray:
-        """ 
-        Full known dynamics
-        """
-        q1, q2, p1, p2 = state
-        if self.state_measure_spring_elongation:
-            q1_dot = p1 / self.m1
-            q2_dot = p2 / self.m2 - p1 / self.m1
-            p1_dot = - self.k1 * q1 + self.k2 * q2
-            p2_dot = - self.k2 * q2
-        else:
-            q1_dot = p1 / self.m1
-            q2_dot = p2 / self.m2
-            p1_dot = - (self.k1 * (q1 - self.y1) + self.k2 * (q1 + self.y2 - q2))
-            p2_dot = - (self.k2 * (q2 - q1 - self.y2))
-        return jnp.stack([q1_dot, q2_dot, p1_dot, p2_dot])
+        return jnp.matmul(J - R, dh)
 
     def plot_trajectory(self, trajectory, fontsize=15, linewidth=3):
         """
