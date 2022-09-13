@@ -1,3 +1,4 @@
+from ossaudiodev import control_labels
 import jax
 
 from datetime import datetime
@@ -44,73 +45,115 @@ class MassSpring(Environment):
                 k : jnp.float32 = 1, 
                 b : jnp.float32 = 0.0,
                 x0 : jnp.float32 = 1,
-                name : str = 'Spring_Mass'
+                name : str = 'spring_mass'
                 ):
         """
         Initialize the double-pendulum environment object.
         """
-
-        super().__init__(dt=dt, random_seed=random_seed, name=name)
-        
         self.m = m
         self.k = k
         self.b = b
 
-        self.config = {
-            'dt' : dt,
-            'm' : m,
-            'k' : k,
-            'b' : b,
-            'name' : name
-        }
+        super().__init__(dt=dt, random_seed=random_seed, name=name)
 
-    def PE(self, q, p):
-        """
-        The system's potential energy.
-        """
-        return 1/2 * self.k * q**2
+        self.config['m'] = m
+        self.config['k'] = k
+        self.config['b'] = b
 
-    def KE(self, q, p):
-        """
-        The system's kinetic energy.
-        """
-        return p**2 / (2 * self.m)
+    def _define_dynamics(self):
 
-    def H(self, q, p):
-        """
-        The system's Hamiltonian.
-        """
-        return self.KE(q,p) + self.PE(q,p)
-
-    @partial(jax.jit, static_argnums=0)
-    def hamiltonian_dynamics(self, 
-                                state : jnp.ndarray, 
-                                t: jnp.ndarray=None,
-                                ) -> jnp.ndarray:
-        """
-        The system dynamics formulated using Hamiltonian mechanics.
-        """
-        q, p = state
-        dh_dq = jax.grad(self.H, argnums=0)(q,p)
-        dh_dp = jax.grad(self.H, argnums=1)(q,p)
-        dh = jnp.stack([dh_dq, dh_dp]).transpose()
+        def PE(state):
+            """
+            The system's potential energy.
+            """
+            q, p = state
+            return 1/2 * self.k * q**2
         
-        J = jnp.array([[0.0, 1.0],[-1.0, 0.0]])
-        R = jnp.array([[0, 0], [0, self.b]])
-        return jnp.matmul(J - R, dh)
+        def KE(state):
+            """
+            The system's kinetic energy.
+            """
+            q, p = state
+            return p**2 / (2 * self.m)
+        
+        def H(state):
+            """
+            Compute the total energy of the system.
+            """
+            return KE(state) + PE(state)
 
-    @partial(jax.jit, static_argnums=(0,))
-    def dynamics_function(self, 
-                        state : np.ndarray, 
-                        t: np.ndarray=None,
-                        ) -> np.ndarray:
-        """ 
-        Full known dynamics
-        """
-        q, p = state
-        q_dot = p / self.m
-        p_dot = - self.b / self.m * p - self.k * q
-        return jnp.stack([q_dot, p_dot])
+        def dynamics_function(state : jnp.ndarray, 
+                                t : jnp.float32, 
+                                control_input : jnp.ndarray = jnp.array([0.0]),
+                                jax_key : jax.random.PRNGKey = None, 
+                                ) -> jnp.ndarray:
+            """
+            The system's dynamics.
+            """
+            dh = jax.grad(H)(state)
+            J = jnp.array([[0.0, 1.0],[-1.0, 0.0]])
+            R = jnp.array([[0.0, 0.0], [0.0, self.b]])
+            g = jnp.array([[0.0], [1.0]])
+
+            output = jnp.matmul(J - R, dh) + jnp.matmul(g, control_input)
+
+            return output
+        
+        self.KE = jax.jit(KE)
+        self.PE = jax.jit(PE)
+        self.H = jax.jit(H)
+        self.dynamics_function = jax.jit(dynamics_function)
+
+    # def PE(self, state):
+    #     """
+    #     The system's potential energy.
+    #     """
+    #     q, p = state
+    #     return 1/2 * self.k * q**2
+
+    # def KE(self, state):
+    #     """
+    #     The system's kinetic energy.
+    #     """
+    #     q, p = state
+    #     return p**2 / (2 * self.m)
+
+    # def H(self, state):
+    #     """
+    #     Compute the total energy of the system.
+    #     """
+    #     return self.KE(state) + self.PE(state)
+
+    # @partial(jax.jit, static_argnums=0)
+    # def dynamics_function(self, 
+    #                         state, 
+    #                         t,
+    #                         control_input=jnp.array([0.0]),
+    #                         ) -> jnp.ndarray:
+    #     """
+    #     The system dynamics formulated using port-Hamiltonian dynamics.
+    #     """
+    #     dh = jax.grad(self.H)(state)
+    #     J = jnp.array([[0.0, 1.0],[-1.0, 0.0]])
+    #     R = jnp.array([[0.0, 0.0], [0.0, self.b]])
+    #     g = jnp.array([[0.0], [1.0]])
+
+    #     output = jnp.matmul(J - R, dh) + jnp.matmul(g, control_input)
+        
+    #     return output
+
+    # # @partial(jax.jit, static_argnums=(0,))
+    # def dynamics_function(self, 
+    #                     state : np.ndarray, 
+    #                     t: np.ndarray=None,
+    #                     ) -> np.ndarray:
+    #     """ 
+    #     Full known dynamics
+    #     """
+    #     q, p = state
+    #     q_dot = p / self.m
+    #     p_dot = - self.b / self.m * p - self.k * q
+    #     return jnp.stack([q_dot, p_dot])
 
     def plot_trajectory(self, trajectory, fontsize=15, linewidth=3):
         """
@@ -136,6 +179,23 @@ class MassSpring(Environment):
 
         plt.show()
 
+    def plot_control(self, control_inputs, fontsize=15, linewidth=3):
+        """
+        Plot the control inputs that generated a particular trajectory.
+        """
+        fig = plt.figure(figsize=(5,5))
+
+        T = np.arange(control_inputs.shape[0]) * self._dt
+
+        u = control_inputs[:, 0]
+        ax = fig.add_subplot(111)
+        ax.plot(T, u, linewidth=linewidth)
+        ax.set_ylabel(r'$u$ $[N]$', fontsize=fontsize)
+        ax.set_xlabel('Time $[s]$', fontsize=fontsize)
+        ax.grid()
+
+        plt.show()
+
     def plot_energy(self, trajectory, fontsize=15, linewidth=3):
         """
         Plot the kinetic, potential, and total energy of the system
@@ -145,11 +205,9 @@ class MassSpring(Environment):
 
         T = np.arange(trajectory.shape[0]) * self._dt
 
-        q = trajectory[:, 0]
-        p = trajectory[:, 1]
-        KE = self.KE(q, p)
-        PE = self.PE(q, p)
-        H = self.H(q, p)
+        KE = jax.vmap(self.KE)(trajectory)
+        PE = jax.vmap(self.PE)(trajectory)
+        H = jax.vmap(self.H)(trajectory)
 
         ax = fig.add_subplot(111)
         ax.plot(T, KE, color='red', linewidth=linewidth, label='Kinetic Energy')
@@ -164,11 +222,23 @@ class MassSpring(Environment):
         plt.show()
 
 def main():
-    env = MassSpring(dt=0.01, m=1., k=1., b=0.0, random_seed=21)
+    env = MassSpring(dt=0.01, m=1., k=1., b=0.5, random_seed=20)
+
+    # def control_policy(state, t, jax_key):
+    #     # q, p = state
+    #     # err = (0.5 - q)
+    #     # kp = 10.0
+    #     # kd = 2.0
+    #     # action = kp * err - kd * p
+    #     # return jnp.array([action])
+    #     return 5.0 * jax.random.uniform(jax_key, shape=(1,), minval = -1.0, maxval=1.0)
+
+    # env.set_control_policy(control_policy)
 
     curdir = os.path.abspath(os.path.curdir)
-    save_dir = os.path.abspath(os.path.join(curdir, 'simulated_data'))
+    save_dir = os.path.abspath(os.path.join(curdir, 'simulated_trajectories'))
     t = time.time()
+    print('starting simulation')
     dataset = env.gen_dataset(trajectory_num_steps=500, 
                                 num_trajectories=200, 
                                 x0_init_lb=jnp.array([-1.0, -1.0]),
@@ -176,8 +246,8 @@ def main():
                                 save_str=save_dir,)
     print(time.time() - t)
     traj = dataset['state_trajectories'][0, :, :]
-    # traj = dataset['inputs'][0, :, :]
     env.plot_trajectory(traj)
+    env.plot_control(dataset['control_inputs'][0, :, :])
     env.plot_energy(traj)
 
 if __name__ == "__main__":
