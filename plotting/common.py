@@ -2,6 +2,8 @@ from ast import mod
 import os, sys
 sys.path.append('..')
 
+from helpers.model_factories import get_model_factory
+
 import jax
 import json, pickle
 
@@ -18,24 +20,31 @@ def load_config_file(sacred_run_id, sacred_save_path=None):
     return config
 
 def load_dataset(sacred_run_id, sacred_save_path=None):
-    experiment_save_path = get_experiment_save_path(sacred_run_id, sacred_save_path)
 
-    # Load the "Run" json file to get the dataset path
-    run_file_str = os.path.abspath(os.path.join(experiment_save_path, 'run.json'))
-    with open(run_file_str, 'r') as f:
-        run = json.load(f)
+    config = load_config_file(sacred_run_id, sacred_save_path=sacred_save_path)
+    dataset_config = config['dataset_setup']
 
-    # load the training/testing datasets
-    os.path.join(experiment_save_path, '..', '..', run['resources'][0][1])
-    train_dataset_path = os.path.abspath(os.path.join(experiment_save_path, '..', '..', run['resources'][0][1]))
-    with open(train_dataset_path, 'rb') as f:
-        train_dataset = pickle.load(f)
+    from helpers.dataloader import load_dataset_from_setup
+    train_dataset, test_dataset = load_dataset_from_setup(dataset_config)
 
-    # load the training/testing datasets
-    os.path.join(experiment_save_path, '..', '..', run['resources'][1][1])
-    test_dataset_path = os.path.abspath(os.path.join(experiment_save_path, '..', '..', run['resources'][1][1]))
-    with open(test_dataset_path, 'rb') as f:
-        test_dataset = pickle.load(f)
+    # experiment_save_path = get_experiment_save_path(sacred_run_id, sacred_save_path)
+
+    # # Load the "Run" json file to get the dataset path
+    # run_file_str = os.path.abspath(os.path.join(experiment_save_path, 'run.json'))
+    # with open(run_file_str, 'r') as f:
+    #     run = json.load(f)
+
+    # # load the training/testing datasets
+    # os.path.join(experiment_save_path, '..', '..', run['resources'][0][1])
+    # train_dataset_path = os.path.abspath(os.path.join(experiment_save_path, '..', '..', run['resources'][0][1]))
+    # with open(train_dataset_path, 'rb') as f:
+    #     train_dataset = pickle.load(f)
+
+    # # load the training/testing datasets
+    # os.path.join(experiment_save_path, '..', '..', run['resources'][1][1])
+    # test_dataset_path = os.path.abspath(os.path.join(experiment_save_path, '..', '..', run['resources'][1][1]))
+    # with open(test_dataset_path, 'rb') as f:
+    #     test_dataset = pickle.load(f)
 
     datasets = {'train_dataset' : train_dataset, 'test_dataset' : test_dataset}
 
@@ -48,26 +57,7 @@ def load_model(sacred_run_id, sacred_save_path=None):
     config = load_config_file(sacred_run_id, sacred_save_path=sacred_save_path)
     model_setup = config['model_setup']
 
-    if model_setup['model_type'] == 'node':
-        from models.neural_ode import NODE
-        model = NODE(rng_key=jax.random.PRNGKey(config['seed']),
-                        input_dim=model_setup['input_dim'],
-                        output_dim=model_setup['output_dim'],
-                        dt=model_setup['dt'],
-                        nn_setup_params=model_setup['nn_setup_params'])
-    elif model_setup['model_type'] == 'hnode':
-        from models.hamiltonian_neural_ode import HNODE
-        model = HNODE(rng_key=jax.random.PRNGKey(config['seed']),
-                        input_dim=model_setup['input_dim'],
-                        output_dim=model_setup['output_dim'],
-                        dt=model_setup['dt'],
-                        nn_setup_params=model_setup['nn_setup_params'])
-    elif model_setup['model_type'] == 'mlp':
-        from models.mlp import MLP
-        model = MLP(rng_key=jax.random.PRNGKey(config['seed']),
-                input_dim=model_setup['input_dim'],
-                output_dim=model_setup['output_dim'],
-                nn_setup_params=model_setup['nn_setup_params'])
+    model = get_model_factory(model_setup).create_model(jax.random.PRNGKey(0))
 
     # Load the "Run" json file to get the artifacts path
     run_file_str = os.path.abspath(os.path.join(experiment_save_path, 'run.json'))
