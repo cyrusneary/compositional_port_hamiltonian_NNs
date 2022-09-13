@@ -3,15 +3,16 @@ sys.path.append('..')
 
 import matplotlib.pyplot as plt
 import numpy as np
+import jax.numpy as jnp
 
 from common import load_config_file, load_dataset, load_model, load_metrics
 
-sacred_run_index = 27
+sacred_run_index = 283
 sacred_save_path = os.path.abspath('../experiments/sacred_runs/')
 
 config = load_config_file(sacred_run_index, sacred_save_path)
-datasets = load_dataset(sacred_run_index, sacred_save_path)
 model, params = load_model(sacred_run_index, sacred_save_path)
+datasets = load_dataset(sacred_run_index, sacred_save_path)
 results = load_metrics(sacred_run_index, sacred_save_path)
 
 test_dataset = datasets['test_dataset']
@@ -19,8 +20,8 @@ test_dataset = datasets['test_dataset']
 # Generate a predicted trajectory
 fontsize = 15
 traj_len = 500
-initial_state = test_dataset['inputs'][0, 0, :]
-true_traj = test_dataset['inputs'][0, 0:traj_len, :]
+initial_state = test_dataset['inputs'][0, :]
+true_traj = test_dataset['inputs'][0:traj_len, :]
 predicted_traj = model.predict_trajectory(params, initial_state=initial_state, 
                                             num_steps=traj_len)
 T = model.dt * np.arange(0, traj_len)
