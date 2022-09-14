@@ -2,8 +2,6 @@ from abc import abstractmethod
 import sys
 sys.path.append('..')
 
-from trainers.sgd_trainer import SGDTrainer
-from trainers.ph_node_trainer import PHNodeTrainer
 
 class trainerFactory():
     """Abstract factory method that creates model trainer objects."""
@@ -18,17 +16,20 @@ class trainerFactory():
 class SGDTrainerFactory(trainerFactory):
     """Factory method that creates a standard SGD model trainer object."""
 
-    def create_trainer(self, model) -> SGDTrainer:
+    def create_trainer(self, model):
         """Create a standard SGD model trainer object."""
+        from trainers.sgd_trainer import SGDTrainer
+
         return SGDTrainer(model.forward,
                             model.init_params,
                             self.trainer_setup)
 
-class PHNodeTrainerFactory(trainerFactory):
+class CompositionalPHNodeTrainerFactory(trainerFactory):
     """Factory method that creates a standard SGD model trainer object."""
 
-    def create_trainer(self, model) -> PHNodeTrainer:
+    def create_trainer(self, model):
         """Create a standard SGD model trainer object."""
+        from trainers.compositional_phnode_trainer import CompositionalPHNodeTrainer
 
         # First, iterate over the submodels and create a separate trainer
         # for each of them.
@@ -44,16 +45,28 @@ class PHNodeTrainerFactory(trainerFactory):
             #                             trainer_setup=self.trainer_setup['subtrainer{}_setup'.format(submodel_ind)])
             submodel_trainer_list.append(trainer)
 
-        return PHNodeTrainer(forward=model.forward,
+        return CompositionalPHNodeTrainer(forward=model.forward,
                                 init_params=model.init_params,
                                 submodel_trainer_list=submodel_trainer_list, 
                                 trainer_setup=self.trainer_setup)
+
+class PHNODETrainerFactory(trainerFactory):
+    """Factory method that creates a standard SGD model trainer object."""
+
+    def create_trainer(self, model):
+        """Create a standard SGD model trainer object."""
+        from trainers.phnode_trainer import PHNODETrainer
+
+        return PHNODETrainer(model,
+                            model.init_params,
+                            self.trainer_setup)
 
 # A mapping from the names of the trainer types to the 
 # appropriate trainer factories.
 trainer_factories = {
     'sgd' : SGDTrainerFactory,
-    'phnode' : PHNodeTrainerFactory,
+    'phnode' : PHNODETrainerFactory,
+    'compositional_phnode' : CompositionalPHNodeTrainerFactory,
 }
 
 def get_trainer_factory(trainer_setup):

@@ -49,18 +49,10 @@ class PHNODE(NODE):
         H_net = get_model_factory(self.model_setup['H_net_setup']).create_model(subkey)
         init_params['H_net_params'] = H_net.init_params
 
-        # Create the parametrized R matrix.
-        # R = jnp.zeros(J.shape)
-        def R_net_forward(x):
-            return hk.Linear(
-                        output_size=self.output_dim, 
-                        with_bias=False, 
-                        w_init=hk.initializers.Constant(0.0)
-                    )(x)
-        R_net_forward_pure = hk.without_apply_rng(hk.transform(R_net_forward))
-
+        # Create the parametrized dissipation matrix.
         self.rng_key, subkey = jax.random.split(self.rng_key)
-        init_params['R_net_params'] = R_net_forward_pure.init(rng=subkey, x=jnp.zeros((self.input_dim,)))
+        R_net = get_model_factory(self.model_setup['R_net_setup']).create_model(subkey)
+        init_params['R_net_params'] = R_net.init_params
 
         # Create the J matrix.
         assert (self.input_dim % 2 == 0)
@@ -89,8 +81,11 @@ class PHNODE(NODE):
                 H = lambda x : jnp.sum(
                     H_net.forward(params=H_net_params, x=x))
                 dh = jax.grad(H)(x)
-                R_val = R_net_forward_pure.apply(R_net_params, dh)
-                return jnp.matmul(J, dh) - R_val
+                R_val = R_net.forward(R_net_params, x)
+                return jnp.matmul(J - R_val, dh)
+
+                # R = jnp.array([[0.0, 0.0], [0.0, 0.5]])
+                # return jnp.matmul(J - R, dh)
 
             k1 = f_approximator(x)
             k2 = f_approximator(x + self.dt/2 * k1)
@@ -104,6 +99,17 @@ class PHNODE(NODE):
         forward = jax.jit(forward)
         forward = jax.vmap(forward, in_axes=(None, 0))
 
+        H_net_forward = jax.jit(
+                lambda params, x : H_net.forward(params['H_net_params'], x))
+        H_net_forward = jax.vmap(H_net_forward, in_axes=(None, 0))
+
+        R_net_forward = jax.jit(
+                lambda params, x : R_net.forward(params['R_net_params'], x))
+        R_net_forward = jax.vmap(R_net_forward, in_axes=(None, 0))
+
         self.init_params = init_params
         self.forward = forward
         self.hamiltonian_network = H_net
+        self.dissipation_network = R_net
+        self.H_net_forward = H_net_forward
+        self.R_net_forward = R_net_forward

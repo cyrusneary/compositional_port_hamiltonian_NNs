@@ -57,7 +57,7 @@ model_setup:
           activation: 'tanh'
 
 trainer_setup:
-  trainer_type : 'phnode'
+  trainer_type : 'compositional_phnode'
   num_subtrainers : 2
   num_training_steps : 10000
   subtrainer0_setup:

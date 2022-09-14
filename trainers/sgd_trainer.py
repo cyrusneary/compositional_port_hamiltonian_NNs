@@ -46,14 +46,6 @@ class SGDTrainer(object):
         self.optimizer = get_optimizer(self.optimizer_setup)
         self.opt_state = self.optimizer.init(self.params)
 
-        # self.optimizer = choose_optimizer(self.optimizer_setup['optimizer'])
-        # if self.optimizer_setup['name'] == 'adam':
-        #     self.optimizer = optax.adam(self.optimizer_setup['learning_rate'])
-        #     self.opt_state = self.optimizer.init(self.params)
-        # # Only handling adam for now.
-        # else:
-        #     pass
-
     def _init_trainer(self, forward):
 
         pen_l2_nn_params = self.pen_l2_nn_params
@@ -116,6 +108,7 @@ class SGDTrainer(object):
             grads, loss_val = jax.grad(loss, argnums=0, has_aux=True)(params, x, y)
             updates, new_opt_state = optimizer.update(grads, opt_state, params)
             new_params = optax.apply_updates(params, updates)
+
             return new_params, new_opt_state, loss_val
 
         self.loss = loss
