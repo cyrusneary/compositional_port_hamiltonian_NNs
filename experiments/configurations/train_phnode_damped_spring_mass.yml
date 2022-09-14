@@ -16,11 +16,16 @@ model_setup:
     nn_setup_params:
         output_sizes: [32, 32, 1]
         activation: 'tanh'
+  R_net_setup:
+    model_type : 'constant_symmetric_positive_matrix'
+    input_dim : 2
+    output_dim: 2
 trainer_setup:
-  trainer_type: 'sgd'
+  trainer_type: 'phnode'
   num_training_steps: 10000
   minibatch_size: 32
   pen_l2_nn_params: 0.0
+  pen_l1_dissipation_params : !!float 1e-4
   optimizer_setup:
-    name: 'adamw'
-    learning_rate : !!float 1e-4
+    name: 'adam'
+    learning_rate : !!float 1e-3

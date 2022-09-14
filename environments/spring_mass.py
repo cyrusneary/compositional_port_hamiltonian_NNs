@@ -45,6 +45,7 @@ class MassSpring(Environment):
                 k : jnp.float32 = 1, 
                 b : jnp.float32 = 0.0,
                 x0 : jnp.float32 = 1,
+                nonlinear_damping : bool = False,
                 name : str = 'spring_mass'
                 ):
         """
@@ -53,12 +54,14 @@ class MassSpring(Environment):
         self.m = m
         self.k = k
         self.b = b
+        self.nonlinear_damping = nonlinear_damping
 
         super().__init__(dt=dt, random_seed=random_seed, name=name)
 
         self.config['m'] = m
         self.config['k'] = k
         self.config['b'] = b
+        self.config['nonlinear_damping'] = nonlinear_damping
 
     def _define_dynamics(self):
 
@@ -90,9 +93,16 @@ class MassSpring(Environment):
             """
             The system's dynamics.
             """
+            q, p = state
+
+            if self.nonlinear_damping:
+                damping = self.b * p**2 / self.m**2 # nonlinear damping F_damp = b \dot{q}^2
+            else:
+                damping = self.b # linear damping F_damp = b \dot{q}
+
             dh = jax.grad(H)(state)
             J = jnp.array([[0.0, 1.0],[-1.0, 0.0]])
-            R = jnp.array([[0.0, 0.0], [0.0, self.b]])
+            R = jnp.array([[0.0, 0.0], [0.0, damping]])
             g = jnp.array([[0.0], [1.0]])
 
             output = jnp.matmul(J - R, dh) + jnp.matmul(g, control_input)
@@ -222,7 +232,7 @@ class MassSpring(Environment):
         plt.show()
 
 def main():
-    env = MassSpring(dt=0.01, m=1., k=1., b=0.5, random_seed=20)
+    env = MassSpring(dt=0.01, m=1., k=1., b=0.5, random_seed=21, nonlinear_damping=True)
 
     # def control_policy(state, t, jax_key):
     #     # q, p = state
@@ -239,8 +249,8 @@ def main():
     save_dir = os.path.abspath(os.path.join(curdir, 'simulated_trajectories'))
     t = time.time()
     print('starting simulation')
-    dataset = env.gen_dataset(trajectory_num_steps=500, 
-                                num_trajectories=200, 
+    dataset = env.gen_dataset(trajectory_num_steps=500, # 500
+                                num_trajectories=20, # 200 for training, 20 for testing
                                 x0_init_lb=jnp.array([-1.0, -1.0]),
                                 x0_init_ub=jnp.array([1.0, 1.0]),
                                 save_str=save_dir,)

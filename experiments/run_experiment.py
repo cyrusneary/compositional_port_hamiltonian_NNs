@@ -18,7 +18,7 @@ from sacred.observers import FileStorageObserver
 # experiment_name = 'MLP Linear Regression' 
 # experiment_name = 'autoencoder mnist'
 # experiment_name = 'MLP Double Spring Mass'
-experiment_name = 'Vanilla NODE Spring Mass' 
+# experiment_name = 'Vanilla NODE Spring Mass' 
 # experiment_name = 'Hamiltonian NODE Spring Mass'
 # experiment_name = 'Vanilla NODE Double Spring Mass'
 # experiment_name = 'Hamiltonian NODE Double Spring Mass'
@@ -27,6 +27,7 @@ experiment_name = 'Vanilla NODE Spring Mass'
 # experiment_name = 'Autoencoder NODE Pendulum'
 # experiment_name = 'Vanilla NODE Damped Spring Mass'
 # experiment_name = 'Port Hamiltonian NODE Damped Spring Mass'
+experiment_name = 'Port Hamiltonian Node Nonlinear Damped Spring Mass'
 
 ex = Experiment(experiment_name)
 
@@ -37,7 +38,7 @@ def config():
     # ex.add_config('configurations/train_mlp.yml')
     # ex.add_config('configurations/train_mnist_autoencoder.yml')
     # ex.add_config('configurations/train_mlp_double_spring_mass.yml')
-    ex.add_config('configurations/train_neural_ode_spring_mass.yml')
+    # ex.add_config('configurations/train_neural_ode_spring_mass.yml')
     # ex.add_config('configurations/train_hnode_spring_mass.yml')
     # ex.add_config('configurations/train_neural_ode_double_spring_mass.yml')
     # ex.add_config('configurations/train_hnode_double_spring_mass.yml')
@@ -46,6 +47,7 @@ def config():
     # ex.add_config('configurations/train_autoencoder_node_pendulum.yml')
     # ex.add_config('configurations/train_neural_ode_damped_spring_mass.yml')
     # ex.add_config('configurations/train_phnode_damped_spring_mass.yml')
+    ex.add_config('configurations/train_phnode_nonlinear_damped_spring_mass.yml')
 
 @ex.automain
 def experiment_main(
@@ -60,6 +62,8 @@ def experiment_main(
 
     print("Starting sacred experiment number: {}".format(_run._id))
 
+    rng_key = jax.random.PRNGKey(seed)
+
     # Add a more unique experiment identifier
     datetime_experiment_name = \
         datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S_') + experiment_name
@@ -72,8 +76,9 @@ def experiment_main(
 
     # Initialize the model to be trained.
     from helpers.model_factories import get_model_factory
+    rng_key, subkey = jax.random.split(rng_key)
     model_factory = get_model_factory(model_setup)
-    model =  model_factory.create_model(seed)
+    model =  model_factory.create_model(subkey)
 
     # Create a model trainer object, which handles all of the model optimization.
     from helpers.trainer_factories import get_trainer_factory
@@ -81,9 +86,10 @@ def experiment_main(
     trainer = trainer_factory.create_trainer(model)
 
     # Run the training algorithm
+    rng_key, subkey = jax.random.split(rng_key)
     trainer.train(train_dataset,
                     test_dataset,
-                    jax.random.PRNGKey(seed),
+                    subkey,
                     sacred_runner=_run)
 
     # Save the results of the experiment
