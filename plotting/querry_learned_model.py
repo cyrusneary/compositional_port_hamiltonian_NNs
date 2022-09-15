@@ -1,6 +1,7 @@
 from common import load_config_file, load_dataset, load_model, load_metrics
 import argparse
 import os
+import jax.numpy as jnp
 
 parser = argparse.ArgumentParser(description='Plot the training results of the \
     Sacred experiment specified by the provided index.')
@@ -18,4 +19,7 @@ datasets = load_dataset(sacred_run_index, sacred_save_path)
 print('Train dataset shape : {}'.format(datasets['train_dataset']['inputs'].shape))
 print('Test dataset shape : {}'.format(datasets['test_dataset']['inputs'].shape))
 
-print(params['R_net_params'])
+a = jnp.array([[0.0, 0.0]])
+predicted_R_mat = model.R_net_forward(params, a)
+
+print(predicted_R_mat)

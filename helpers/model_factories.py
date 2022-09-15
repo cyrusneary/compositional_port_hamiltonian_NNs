@@ -111,6 +111,13 @@ class SymmetricPositiveMatrixFactory(ModelFactory):
         return SymmetricPositiveMatrix(rng_key=rng_key,
                                         model_setup=self.model_setup)
 
+class KnownMatrixFactory(ModelFactory):
+    """Factory that creates a known matrix."""
+
+    def create_model(self, rng_key : jax.random.PRNGKey):
+        from models.known_matrix import KnownMatrix
+        return KnownMatrix(model_setup=self.model_setup)
+
 model_factories = {
     'node' : NodeFactory,
     'hnode' : HamiltonianNodeFactory,
@@ -120,7 +127,8 @@ model_factories = {
     'autoencoder_node' : AutoencoderNodeFactory,
     'phnode' : PortHamiltonianNodeFactory,
     'constant_symmetric_positive_matrix' : ConstantSymmetricPositiveMatrixFactory,
-    'symmetric_positive_matrix' : SymmetricPositiveMatrixFactory
+    'symmetric_positive_matrix' : SymmetricPositiveMatrixFactory,
+    'known_matrix' : KnownMatrixFactory,
 }
 
 def get_model_factory(model_setup):

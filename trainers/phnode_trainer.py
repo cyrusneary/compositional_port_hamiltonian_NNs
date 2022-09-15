@@ -39,7 +39,7 @@ class PHNODETrainer(object):
             'training.loss' : {'steps' : [], 'values' : []},
             'testing.loss' : {'steps' : [], 'values' : []},
             'training.regularization_loss' : {'steps' : [], 'values' : []},
-            'training.dissipation_regulrization_loss' : {'steps' : [], 'values' : []},
+            'training.dissipation_regularization_loss' : {'steps' : [], 'values' : []},
         }
 
         self._init_optimizer()
@@ -86,18 +86,19 @@ class PHNODETrainer(object):
                 sum(jnp.sum(jnp.square(p)) 
                     for p in jax.tree_util.tree_leaves(params['H_net_params']))
             
-            # R_net_out = R_net_forward(params, x).flatten()
-            # dissipation_regularization_loss = pen_l1_dissipation_params * \
-            #     jnp.linalg.norm(R_net_out, ord=1) / num_datapoints
+            R_net_out = R_net_forward(params, x).flatten()
+            dissipation_regularization_loss = pen_l1_dissipation_params * \
+                jnp.linalg.norm(R_net_out, ord=1) / num_datapoints
 
             total_loss = data_loss \
                     + regularization_loss \
-                    # + dissipation_regularization_loss
+                    + dissipation_regularization_loss
             
             loss_values = {
                 'total_loss' : total_loss,
                 'data_loss' : data_loss,
                 'regularization_loss' : regularization_loss,
+                'dissipation_regularization_loss' : dissipation_regularization_loss,
             }
 
             return total_loss, loss_values
@@ -184,6 +185,7 @@ class PHNODETrainer(object):
             
             train_loss = loss_values['total_loss']
             regularization_loss = loss_values['regularization_loss']
+            dissipation_regularization_loss = loss_values['dissipation_regularization_loss']
 
             # compute the loss on the testing dataset
             test_loss, _ = self.loss(self.params, 
@@ -193,11 +195,11 @@ class PHNODETrainer(object):
             self.results['training.loss']['steps'].append(step + completed_steps_offset)
             self.results['testing.loss']['steps'].append(step + completed_steps_offset)
             self.results['training.regularization_loss']['steps'].append(step + completed_steps_offset)
-            # self.results['training.dissipation_regularization_loss']['steps'].append(step + completed_steps_offset)
+            self.results['training.dissipation_regularization_loss']['steps'].append(step + completed_steps_offset)
             self.results['training.loss']['values'].append(float(train_loss))
             self.results['testing.loss']['values'].append(float(test_loss))
             self.results['training.regularization_loss']['values'].append(float(regularization_loss))
-            # self.results['training.dissipation_regularization_loss']['values'].append(float(dissipation_regularization_loss))
+            self.results['training.dissipation_regularization_loss']['values'].append(float(dissipation_regularization_loss))
 
             if sacred_runner is not None:
                 sacred_runner.log_scalar('training.loss', 
@@ -206,5 +208,5 @@ class PHNODETrainer(object):
                     float(test_loss), step + completed_steps_offset)
                 sacred_runner.log_scalar('training.regularization_loss', 
                     float(regularization_loss), step + completed_steps_offset)
-                # sacred_runner.log_scalar('training.dissipation_regularization_loss', 
-                #     float(dissipation_regularization_loss), step + completed_steps_offset)
+                sacred_runner.log_scalar('training.dissipation_regularization_loss', 
+                    float(dissipation_regularization_loss), step + completed_steps_offset)

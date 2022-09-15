@@ -77,3 +77,33 @@ def get_params_struct(params):
         param_count = param_count + array.size
 
     return params_shapes, param_count, tree_struct
+
+def get_matrix_from_vector_and_parameter_indeces(vector, parametrized_indeces, matrix_size):
+    """
+    Construct a matrix from a vector representation of the parametrized elements
+    and a list of parameter indeces.
+
+    Parameters
+    ----------
+    vector : 
+        A vector containing the parameters.
+    parametrized_indeces : 
+        A list of indeces that correspond to the locations of the parameters in the matrix.
+    matrix_size :
+        The size of the matrix to be constructed. (matrix_size, matrix_size)
+    """
+    # Build the matrix from its parametrized elements.
+    outer = []
+    vector_rep_ind = 0
+    for i in range(matrix_size):
+        inner = []
+        for j in range(matrix_size):
+            if [i,j] in parametrized_indeces:
+                assert vector_rep_ind < vector.shape[0], \
+                    "The number of parametrized elements of the R matrix must be equal to the output dimension of the MLP."
+                inner.append(vector[vector_rep_ind])
+                vector_rep_ind = vector_rep_ind + 1
+            else:
+                inner.append(0.0)
+        outer.append(inner)
+    return jnp.array(outer)

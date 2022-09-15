@@ -17,9 +17,8 @@ model_setup:
         output_sizes: [32, 32, 1]
         activation: 'tanh'
   R_net_setup:
-    model_type : 'constant_symmetric_positive_matrix'
-    matrix_size : 2
-    parametrized_indeces : [[1,1]]
+    model_type : 'known_matrix'
+    matrix : [[0.0, 0.0], [0.0, 0.5]]
 trainer_setup:
   trainer_type: 'phnode'
   num_training_steps: 10000
