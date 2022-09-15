@@ -12,6 +12,7 @@ model_setup:
   input_dim : 4
   output_dim: 4
   dt : 0.01
+  integrator : 'rk4'
   H_net_setup : 
     model_type : 'mlp'
     input_dim : 4

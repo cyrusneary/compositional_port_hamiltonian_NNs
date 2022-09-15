@@ -1,39 +1,30 @@
-experiment_name : 'damped spring mass port Hamiltonian NODE'
+experiment_name : 'nonlinear damped spring mass with control inputs vanilla NODE'
 dataset_setup : 
   dataset_type : 'trajectory'
   train_dataset_file_name : 'spring_mass_nonlinear_damped_training_2022-09-15-15-11-01.pkl'
   test_dataset_file_name : 'spring_mass_nonlinear_damped_testing_2022-09-15-15-09-04.pkl'
   dataset_path : '../environments/simulated_trajectories'
 model_setup:
-  model_type : 'phnode'
-  input_dim : 2
+  model_type : 'node'
+  input_dim : 3 # 2 dimensions for state, 1 for control
   output_dim: 2
   dt : 0.01
   integrator : 'rk4'
-  H_net_setup:
+  control_inputs : True
+  state_dim : 2
+  control_dim : 1
+  network_setup:
     model_type : 'mlp'
-    input_dim : 2
-    output_dim: 1
+    input_dim : 3
+    output_dim: 2
     nn_setup_params:
-        output_sizes: [32, 32, 1]
+        output_sizes: [32, 32, 2]
         activation: 'tanh'
-  R_net_setup:
-    model_type : 'parametrized_matrix'
-    matrix_size : 2
-    parametrized_indeces : [[0,0], [1,1]]
-    mlp_setup_params:
-      model_type : 'mlp'
-      input_dim : 2
-      output_dim: 2
-      nn_setup_params:
-        output_sizes: [16, 16, 2]
-        activation : 'tanh'
 trainer_setup:
-  trainer_type: 'phnode'
+  trainer_type: 'node_with_control'
   num_training_steps: 10000
   minibatch_size: 32
   pen_l2_nn_params: 0.0
-  pen_l1_dissipation_params : !!float 1e-6 # !!float 1e-8 # !!float 1e-4
   optimizer_setup:
     name: 'adam'
     learning_rate : !!float 1e-3

@@ -232,7 +232,7 @@ class MassSpring(Environment):
         plt.show()
 
 def main():
-    env = MassSpring(dt=0.01, m=1., k=1., b=0.5, random_seed=21, nonlinear_damping=True)
+    env = MassSpring(dt=0.01, m=1., k=1., b=0.5, random_seed=20, nonlinear_damping=True)
 
     # def control_policy(state, t, jax_key):
     #     # q, p = state
@@ -250,7 +250,7 @@ def main():
     t = time.time()
     print('starting simulation')
     dataset = env.gen_dataset(trajectory_num_steps=500, # 500
-                                num_trajectories=20, # 200 for training, 20 for testing
+                                num_trajectories=200, # 200 for training, 20 for testing
                                 x0_init_lb=jnp.array([-1.0, -1.0]),
                                 x0_init_ub=jnp.array([1.0, 1.0]),
                                 save_str=save_dir,)

@@ -166,6 +166,9 @@ class Environment(object):
             control_inputs.append(control)
             xnextVal.append(next_state)
 
+        # Append the last control input again to make the trajectory length the same.
+        control_inputs.append(control)
+
         xnextVal = jnp.array(xnextVal)
         control_inputs = jnp.array(control_inputs)
         return xnextVal, tIndexes, control_inputs

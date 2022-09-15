@@ -240,6 +240,8 @@ class TrajectoryMultiModelDataLoader(TrajectoryDataLoader):
                 'inputs' : dset_trajectories['state_trajectories'][:, :-1, :],
                 'outputs' : dset_trajectories['state_trajectories'][:, 1:, :],
             }
+            if 'control_inputs' in dset_trajectories:
+                dset['control_inputs'] = dset_trajectories['control_inputs'][:, :-1, :]
             dset = self.reshape_dataset(dset)
             train_dataset.append(dset)
             print('Train dataset {} input shape: {}'.format(i, dset['inputs'].shape))
@@ -254,6 +256,8 @@ class TrajectoryMultiModelDataLoader(TrajectoryDataLoader):
             'inputs' : test_trajectories['state_trajectories'][:, :-1, :],
             'outputs' : test_trajectories['state_trajectories'][:, 1:, :]
         }
+        if 'control_inputs' in test_trajectories:
+            test_dataset['control_inputs'] = test_trajectories['control_inputs'][:, :-1, :]
         test_dataset = self.reshape_dataset(test_dataset)
         print('Test dataset input shape: {}'.format(test_dataset['inputs'].shape))
         print('Test dataset output shape: {}'.format(test_dataset['outputs'].shape))

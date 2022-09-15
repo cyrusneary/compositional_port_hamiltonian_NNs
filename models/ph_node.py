@@ -54,10 +54,10 @@ class PHNODE(NODE):
         R_net = get_model_factory(self.model_setup['R_net_setup']).create_model(subkey)
         init_params['R_net_params'] = R_net.init_params
 
-        # # Create the parametrized control input matrix.
-        # self.rng_key, subkey = jax.random.split(self.rng_key)
-        # g_net = get_model_factory(self.model_setup['g_net_setup']).create_model(subkey)
-        # init_params['g_net_params'] = g_net.init_params
+        # Create the parametrized control input matrix.
+        self.rng_key, subkey = jax.random.split(self.rng_key)
+        g_net = get_model_factory(self.model_setup['g_net_setup']).create_model(subkey)
+        init_params['g_net_params'] = g_net.init_params
 
         # Create the J matrix.
         assert (self.input_dim % 2 == 0)
@@ -69,14 +69,14 @@ class PHNODE(NODE):
         J_bottom = jnp.hstack([-eye_shape_num_states, zeros_shape_num_states])
         J = jnp.vstack([J_top, J_bottom])
         
-        def forward(params, x):
+        def forward(params, x, u=0.0):
 
             H_net_params = params['H_net_params']
             R_net_params = params['R_net_params']
-            # g_net_params = params['g_net_params']
+            g_net_params = params['g_net_params']
 
             # Put a jax.vmap around this to fix the R_val thing.
-            def f_approximator(x, t=0):
+            def f_approximator(x, t=0, u):
                 """
                 The system dynamics formulated using Hamiltonian mechanics.
                 """
@@ -88,16 +88,19 @@ class PHNODE(NODE):
                     H_net.forward(params=H_net_params, x=x))
                 dh = jax.grad(H)(x)
                 R_val = R_net.forward(R_net_params, x)
-                # g_val = g_net.forward(g_net_params, x)
-                return jnp.matmul(J - R_val, dh) # + jnp.matmul(g_val, x)
+                g_val = g_net.forward(g_net_params, x)
+                return jnp.matmul(J - R_val, dh) + jnp.matmul(g_val, u)
 
                 # R = jnp.array([[0.0, 0.0], [0.0, 0.5]])
                 # return jnp.matmul(J - R, dh)
 
-            k1 = f_approximator(x)
-            k2 = f_approximator(x + self.dt/2 * k1)
-            k3 = f_approximator(x + self.dt/2 * k2)
-            k4 = f_approximator(x + self.dt * k3)
+            # Fix the control to be constant during numerical integration.
+            f_fixed_control = lambda x, t : f_approximator(x, t, u)
+
+            k1 = f_fixed_control(x)
+            k2 = f_fixed_control(x + self.dt/2 * k1)
+            k3 = f_fixed_control(x + self.dt/2 * k2)
+            k4 = f_fixed_control(x + self.dt * k3)
 
             out = x + self.dt/6 * (k1 + 2 * k2 + 2 * k3 + k4)
 

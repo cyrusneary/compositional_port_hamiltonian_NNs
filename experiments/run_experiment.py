@@ -18,7 +18,7 @@ from sacred.observers import FileStorageObserver
 # experiment_name = 'MLP Linear Regression' 
 # experiment_name = 'autoencoder mnist'
 # experiment_name = 'MLP Double Spring Mass'
-# experiment_name = 'Vanilla NODE Spring Mass' 
+experiment_name = 'Vanilla NODE Spring Mass' 
 # experiment_name = 'Hamiltonian NODE Spring Mass'
 # experiment_name = 'Vanilla NODE Double Spring Mass'
 # experiment_name = 'Hamiltonian NODE Double Spring Mass'
@@ -26,9 +26,10 @@ from sacred.observers import FileStorageObserver
 # experiment_name = 'Autoencoder MLP Pendulum'
 # experiment_name = 'Autoencoder NODE Pendulum'
 # experiment_name = 'Vanilla NODE Damped Spring Mass'
-experiment_name = 'Port Hamiltonian NODE Damped Spring Mass'
+# experiment_name = 'Port Hamiltonian NODE Damped Spring Mass'
 # experiment_name = 'Port Hamiltonian Node Nonlinear Damped Spring Mass'
 # experiment_name = 'Port Hamiltonian Node Damped Spring Mass Known Damping'
+# experiment_name = 'Vanilla NODE Nonlinear Damped Spring Mass with Control Inputs'
 
 ex = Experiment(experiment_name)
 
@@ -39,7 +40,7 @@ def config():
     # ex.add_config('configurations/train_mlp.yml')
     # ex.add_config('configurations/train_mnist_autoencoder.yml')
     # ex.add_config('configurations/train_mlp_double_spring_mass.yml')
-    # ex.add_config('configurations/train_neural_ode_spring_mass.yml')
+    ex.add_config('configurations/train_neural_ode_spring_mass.yml')
     # ex.add_config('configurations/train_hnode_spring_mass.yml')
     # ex.add_config('configurations/train_neural_ode_double_spring_mass.yml')
     # ex.add_config('configurations/train_hnode_double_spring_mass.yml')
@@ -47,9 +48,10 @@ def config():
     # ex.add_config('configurations/train_autoencoder_mlp_pendulum.yml')
     # ex.add_config('configurations/train_autoencoder_node_pendulum.yml')
     # ex.add_config('configurations/train_neural_ode_damped_spring_mass.yml')
-    ex.add_config('configurations/train_phnode_damped_spring_mass.yml')
+    # ex.add_config('configurations/train_phnode_damped_spring_mass.yml')
     # ex.add_config('configurations/train_phnode_nonlinear_damped_spring_mass.yml')
     # ex.add_config('configurations/train_phnode_known_damping_spring_mass.yml')
+    # ex.add_config('configurations/train_neural_ode_nonlinear_damped_control_spring_mass.yml')
 
 @ex.automain
 def experiment_main(

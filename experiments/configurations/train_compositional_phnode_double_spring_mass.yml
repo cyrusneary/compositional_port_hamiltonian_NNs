@@ -16,6 +16,7 @@ dataset_setup :
 model_setup:
   model_type : 'compositional_phnode'
   dt : 0.01
+  integrator : 'rk4'
   input_dim : 4
   output_dim : 4
   J : [[0.0, 0.0, 1.0, 0.0], 
