@@ -6,12 +6,12 @@ from .common import get_matrix_from_vector_and_parameter_indeces
 
 class ParametrizedConstantMatrixModule(hk.Module):
     def __init__(self, 
-                matrix_size : int,
+                matrix_shape : tuple,
                 parametrized_indeces : list,
                 w_init : hk.initializers.Initializer = hk.initializers.Constant(0.0),
                 name=None):
         super().__init__(name=name)
-        self.matrix_size = matrix_size
+        self.matrix_shape = matrix_shape
         self.w_init = w_init
         self.parametrized_indeces = parametrized_indeces
         self.num_unique_elements = len(parametrized_indeces)
@@ -24,7 +24,7 @@ class ParametrizedConstantMatrixModule(hk.Module):
             )
 
         return get_matrix_from_vector_and_parameter_indeces(
-                w, self.parametrized_indeces, self.matrix_size
+                w, self.parametrized_indeces, self.matrix_shape
             )
 
 class ParametrizedConstantMatrix(object):
@@ -42,23 +42,23 @@ class ParametrizedConstantMatrix(object):
         self.model_name = model_name
         self.model_setup = model_setup
 
-        self.matrix_size = model_setup['matrix_size']
-        self.parametrized_indeces = model_setup['parametrized_indeces']
-
         self._build_model()
 
     def _build_model(self):
         """
         Build the model.
         """
+        matrix_shape = tuple(self.model_setup['matrix_shape'])
+        parametrized_indeces = self.model_setup['parametrized_indeces']
+
         def R_net_forward(x):
             return ParametrizedConstantMatrixModule(
-                self.matrix_size, self.parametrized_indeces)(x)
+                matrix_shape, parametrized_indeces)(x)
 
         R_net_forward_pure = hk.without_apply_rng(hk.transform(R_net_forward))
 
         self.rng_key, subkey = jax.random.split(self.rng_key)
-        init_params = R_net_forward_pure.init(rng=subkey, x=jnp.zeros((self.matrix_size,)))
+        init_params = R_net_forward_pure.init(rng=subkey, x=jnp.zeros((matrix_shape[1],)))
 
         def forward(params, x):
             """

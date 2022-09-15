@@ -19,14 +19,14 @@ model_setup:
         activation: 'tanh'
   R_net_setup:
     model_type : 'parametrized_constant_matrix'
-    matrix_size : 2
+    matrix_shape : [2,2]
     parametrized_indeces : [[1,1]]
 trainer_setup:
   trainer_type: 'phnode'
   num_training_steps: 10000
   minibatch_size: 32
   pen_l2_nn_params: 0.0
-  pen_l1_dissipation_params : 0.0 # !!float 1e-7 ##!!float 1e-4
+  pen_l1_dissipation_params : 0.0 # !!float 1e-6 ##!!float 1e-4
   optimizer_setup:
     name: 'adam'
     learning_rate : !!float 1e-3

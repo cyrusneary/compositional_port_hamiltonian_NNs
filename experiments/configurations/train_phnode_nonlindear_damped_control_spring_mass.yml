@@ -1,8 +1,8 @@
 experiment_name : 'damped spring mass port Hamiltonian NODE'
 dataset_setup : 
   dataset_type : 'trajectory'
-  train_dataset_file_name : 'spring_mass_nonlinear_damped_training_2022-09-15-15-11-01.pkl'
-  test_dataset_file_name : 'spring_mass_nonlinear_damped_testing_2022-09-15-15-09-04.pkl'
+  train_dataset_file_name : 'spring_mass_nonlinear_damped_sin_control_training_2022-09-15-17-15-34.pkl'
+  test_dataset_file_name : 'spring_mass_nonlinear_damped_sin_control_testing_2022-09-15-17-13-56.pkl'
   dataset_path : '../environments/simulated_trajectories'
 model_setup:
   model_type : 'phnode'
@@ -10,6 +10,9 @@ model_setup:
   output_dim: 2
   dt : 0.01
   integrator : 'rk4'
+  control_inputs : True
+  state_dim : 2
+  control_dim : 1
   H_net_setup:
     model_type : 'mlp'
     input_dim : 2
@@ -28,6 +31,10 @@ model_setup:
       nn_setup_params:
         output_sizes: [16, 16, 2]
         activation : 'tanh'
+  g_net_setup :
+    model_type : 'parametrized_constant_matrix'
+    matrix_shape : [2,1]
+    parametrized_indeces : [[0,0], [1,1]]
 trainer_setup:
   trainer_type: 'phnode'
   num_training_steps: 10000

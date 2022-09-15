@@ -78,7 +78,7 @@ def get_params_struct(params):
 
     return params_shapes, param_count, tree_struct
 
-def get_matrix_from_vector_and_parameter_indeces(vector, parametrized_indeces, matrix_size):
+def get_matrix_from_vector_and_parameter_indeces(vector, parametrized_indeces, matrix_shape):
     """
     Construct a matrix from a vector representation of the parametrized elements
     and a list of parameter indeces.
@@ -89,15 +89,15 @@ def get_matrix_from_vector_and_parameter_indeces(vector, parametrized_indeces, m
         A vector containing the parameters.
     parametrized_indeces : 
         A list of indeces that correspond to the locations of the parameters in the matrix.
-    matrix_size :
-        The size of the matrix to be constructed. (matrix_size, matrix_size)
+    matrix_shape :
+        The shape of the matrix that the vector should be reshaped into.
     """
     # Build the matrix from its parametrized elements.
     outer = []
     vector_rep_ind = 0
-    for i in range(matrix_size):
+    for i in range(matrix_shape[0]):
         inner = []
-        for j in range(matrix_size):
+        for j in range(matrix_shape[1]):
             if [i,j] in parametrized_indeces:
                 assert vector_rep_ind < vector.shape[0], \
                     "The number of parametrized elements of the R matrix must be equal to the output dimension of the MLP."
