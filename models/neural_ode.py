@@ -65,11 +65,11 @@ class NODE(object):
             An array representing the system initial state.
         num_steps : 
             Number of steps to include in trajectory.
+        control_policy :
+            A function that takes in the current state and outputs the control.
         """
-        trajectory = np.zeros((num_steps, initial_state.shape[0]))
-        trajectory[0] = initial_state
-
         trajectory = [initial_state]
+        times = [0.0]
         control_inputs = []
 
         if self.control_inputs:
@@ -80,14 +80,18 @@ class NODE(object):
 
         next_state = initial_state.reshape((1, len(initial_state)))
         for step in range(1, num_steps):
-            control_input = control_policy(next_state, 0)
+            t = times[-1]
+            control_input = jnp.array([control_policy(next_state, t)])
             next_state = self.forward(params, next_state, control_input)
             trajectory.append(next_state[0])
-            control_inputs.append(control_input)
+            control_inputs.append(control_input[0])
+            times.append(t + self.dt)
+        control_inputs.append(control_input[0])
 
         trajectory = {
             'state_trajectory' : np.array(trajectory),
             'control_inputs' : np.array(control_inputs),
+            'times' : np.array(times),
         }
 
         return trajectory

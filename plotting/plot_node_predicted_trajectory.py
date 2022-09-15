@@ -23,15 +23,20 @@ results = load_metrics(sacred_run_index, sacred_save_path)
 
 test_dataset = datasets['test_dataset']
 
-# Generate a predicted trajectory
-fontsize = 15
+def control_policy(state, t):
+    return jnp.array([jnp.sin(t)])
+
 traj_len = 500
 initial_state = test_dataset['inputs'][0, :]
 true_traj = test_dataset['inputs'][0:traj_len, :]
 predicted_traj_and_control = model.predict_trajectory(params, initial_state=initial_state, 
-                                            num_steps=traj_len)
+                                            num_steps=traj_len, control_policy=control_policy)
 predicted_traj = predicted_traj_and_control['state_trajectory']
 predicted_control = predicted_traj_and_control['control_inputs']
+
+# Generate a predicted trajectory
+fontsize = 15
+
 T = model.dt * np.arange(0, traj_len)
 fig = plt.figure(figsize=(10,10))
 ax = fig.add_subplot(211)
@@ -47,4 +52,9 @@ ax.plot(T, true_traj[:,1], color='black', linewidth=3, label='True Dynamics')
 ax.set_xlabel('Time [s]', fontsize=fontsize)
 ax.set_ylabel(r'$\frac{dx}{dt}$ $[\frac{m}{s}]$', fontsize=fontsize)
 
+plt.show()
+
+fig = plt.figure()
+ax = fig.add_subplot(111)
+ax.plot(T, predicted_control[:,0], color='blue', linewidth=3, label='Predicted Control')
 plt.show()

@@ -232,18 +232,20 @@ class MassSpring(Environment):
         plt.show()
 
 def main():
-    env = MassSpring(dt=0.01, m=1., k=1., b=0.5, random_seed=20, nonlinear_damping=True)
+    env = MassSpring(dt=0.01, m=1., k=1., b=0.5, random_seed=21, nonlinear_damping=True)
 
-    # def control_policy(state, t, jax_key):
-    #     # q, p = state
-    #     # err = (0.5 - q)
-    #     # kp = 10.0
-    #     # kd = 2.0
-    #     # action = kp * err - kd * p
-    #     # return jnp.array([action])
-    #     return 5.0 * jax.random.uniform(jax_key, shape=(1,), minval = -1.0, maxval=1.0)
+    def control_policy(state, t, jax_key):
+        # q, p = state
+        # err = (0.5 - q)
+        # kp = 10.0
+        # kd = 2.0
+        # action = kp * err - kd * p
+        # return jnp.array([action])
 
-    # env.set_control_policy(control_policy)
+        # return 5.0 * jax.random.uniform(jax_key, shape=(1,), minval = -1.0, maxval=1.0)
+        return jnp.array([jnp.sin(t)])
+
+    env.set_control_policy(control_policy)
 
     curdir = os.path.abspath(os.path.curdir)
     save_dir = os.path.abspath(os.path.join(curdir, 'simulated_trajectories'))

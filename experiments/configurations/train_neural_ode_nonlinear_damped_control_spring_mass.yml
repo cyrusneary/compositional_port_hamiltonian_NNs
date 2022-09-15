@@ -1,8 +1,8 @@
 experiment_name : 'nonlinear damped spring mass with control inputs vanilla NODE'
 dataset_setup : 
   dataset_type : 'trajectory'
-  train_dataset_file_name : 'spring_mass_nonlinear_damped_training_2022-09-15-15-11-01.pkl'
-  test_dataset_file_name : 'spring_mass_nonlinear_damped_testing_2022-09-15-15-09-04.pkl'
+  train_dataset_file_name : 'spring_mass_nonlinear_damped_sin_control_training_2022-09-15-17-15-34.pkl'
+  test_dataset_file_name : 'spring_mass_nonlinear_damped_sin_control_testing_2022-09-15-17-13-56.pkl'
   dataset_path : '../environments/simulated_trajectories'
 model_setup:
   model_type : 'node'
