@@ -93,22 +93,22 @@ class AutoencoderNodeFactory(ModelFactory):
             nn_setup_params=self.model_setup['nn_setup_params']
         )
 
-class ConstantSymmetricPositiveMatrixFactory(ModelFactory):
+class ParametrizedConstantMatrixFactory(ModelFactory):
     """Factory that creates a parametrized constant symmetric positive matrix."""
 
     def create_model(self, rng_key : jax.random.PRNGKey):
-        from models.constant_symmetric_positive_matrix \
-            import ConstantSymmetricPositiveMatrix
-        return ConstantSymmetricPositiveMatrix(rng_key=rng_key,
+        from models.parametrized_constant_matrix \
+            import ParametrizedConstantMatrix
+        return ParametrizedConstantMatrix(rng_key=rng_key,
                                                 model_setup=self.model_setup)
 
 
-class SymmetricPositiveMatrixFactory(ModelFactory):
+class ParametrizedMatrixFactory(ModelFactory):
     """Factory that creates a parametrized symmetric positive matrix."""
 
     def create_model(self, rng_key : jax.random.PRNGKey):
-        from models.symmetric_positive_matrix import SymmetricPositiveMatrix
-        return SymmetricPositiveMatrix(rng_key=rng_key,
+        from models.parametrized_matrix import ParametrizedMatrix
+        return ParametrizedMatrix(rng_key=rng_key,
                                         model_setup=self.model_setup)
 
 class KnownMatrixFactory(ModelFactory):
@@ -126,8 +126,8 @@ model_factories = {
     'autoencoder_mlp' : AutoencoderFactory,
     'autoencoder_node' : AutoencoderNodeFactory,
     'phnode' : PortHamiltonianNodeFactory,
-    'constant_symmetric_positive_matrix' : ConstantSymmetricPositiveMatrixFactory,
-    'symmetric_positive_matrix' : SymmetricPositiveMatrixFactory,
+    'parametrized_constant_matrix' : ParametrizedConstantMatrixFactory,
+    'parametrized_matrix' : ParametrizedMatrixFactory,
     'known_matrix' : KnownMatrixFactory,
 }
 

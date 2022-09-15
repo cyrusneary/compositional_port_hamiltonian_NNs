@@ -54,6 +54,11 @@ class PHNODE(NODE):
         R_net = get_model_factory(self.model_setup['R_net_setup']).create_model(subkey)
         init_params['R_net_params'] = R_net.init_params
 
+        # # Create the parametrized control input matrix.
+        # self.rng_key, subkey = jax.random.split(self.rng_key)
+        # g_net = get_model_factory(self.model_setup['g_net_setup']).create_model(subkey)
+        # init_params['g_net_params'] = g_net.init_params
+
         # Create the J matrix.
         assert (self.input_dim % 2 == 0)
         num_states = int(self.input_dim/2)
@@ -68,6 +73,7 @@ class PHNODE(NODE):
 
             H_net_params = params['H_net_params']
             R_net_params = params['R_net_params']
+            # g_net_params = params['g_net_params']
 
             # Put a jax.vmap around this to fix the R_val thing.
             def f_approximator(x, t=0):
@@ -82,7 +88,8 @@ class PHNODE(NODE):
                     H_net.forward(params=H_net_params, x=x))
                 dh = jax.grad(H)(x)
                 R_val = R_net.forward(R_net_params, x)
-                return jnp.matmul(J - R_val, dh)
+                # g_val = g_net.forward(g_net_params, x)
+                return jnp.matmul(J - R_val, dh) # + jnp.matmul(g_val, x)
 
                 # R = jnp.array([[0.0, 0.0], [0.0, 0.5]])
                 # return jnp.matmul(J - R, dh)

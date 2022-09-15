@@ -4,7 +4,7 @@ import jax.numpy as jnp
 import haiku as hk
 from .common import get_matrix_from_vector_and_parameter_indeces
 
-class ConstantSymmetricPositiveMatrixModule(hk.Module):
+class ParametrizedConstantMatrixModule(hk.Module):
     def __init__(self, 
                 matrix_size : int,
                 parametrized_indeces : list,
@@ -27,7 +27,7 @@ class ConstantSymmetricPositiveMatrixModule(hk.Module):
                 w, self.parametrized_indeces, self.matrix_size
             )
 
-class ConstantSymmetricPositiveMatrix(object):
+class ParametrizedConstantMatrix(object):
     """
     Model a parametrized symmetric matrix with positive entries.
     """
@@ -52,7 +52,7 @@ class ConstantSymmetricPositiveMatrix(object):
         Build the model.
         """
         def R_net_forward(x):
-            return ConstantSymmetricPositiveMatrixModule(
+            return ParametrizedConstantMatrixModule(
                 self.matrix_size, self.parametrized_indeces)(x)
 
         R_net_forward_pure = hk.without_apply_rng(hk.transform(R_net_forward))

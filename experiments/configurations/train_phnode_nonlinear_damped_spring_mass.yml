@@ -17,7 +17,7 @@ model_setup:
         output_sizes: [32, 32, 1]
         activation: 'tanh'
   R_net_setup:
-    model_type : 'symmetric_positive_matrix'
+    model_type : 'parametrized_matrix'
     matrix_size : 2
     parametrized_indeces : [[0,0], [1,1]]
     mlp_setup_params:

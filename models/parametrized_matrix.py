@@ -9,7 +9,7 @@ sys.path.append('..')
 from helpers.model_factories import get_model_factory
 from .common import get_matrix_from_vector_and_parameter_indeces
 
-class SymmetricPositiveMatrix(object):
+class ParametrizedMatrix(object):
     """
     Model a parametrized symmetric matrix with positive entries.
     """
