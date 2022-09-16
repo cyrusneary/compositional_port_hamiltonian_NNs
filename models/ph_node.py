@@ -13,6 +13,7 @@ import sys
 sys.path.append('..')
 
 from helpers.model_factories import get_model_factory
+from helpers.integrator_factory import integrator_factory
 
 class PHNODE(NODE):
 
@@ -41,6 +42,7 @@ class PHNODE(NODE):
         This function builds a neural network to directly estimate future state 
         values. It assigns self.forward(), self.init_params, and self.hamiltonian_network.
         """
+        integrator = integrator_factory(self.model_setup['integrator'])
 
         init_params = {}
 
@@ -50,14 +52,16 @@ class PHNODE(NODE):
         init_params['H_net_params'] = H_net.init_params
 
         # Create the parametrized dissipation matrix.
-        self.rng_key, subkey = jax.random.split(self.rng_key)
-        R_net = get_model_factory(self.model_setup['R_net_setup']).create_model(subkey)
-        init_params['R_net_params'] = R_net.init_params
+        if 'R_net_setup' in self.model_setup:
+            self.rng_key, subkey = jax.random.split(self.rng_key)
+            R_net = get_model_factory(self.model_setup['R_net_setup']).create_model(subkey)
+            init_params['R_net_params'] = R_net.init_params
 
-        # # Create the parametrized control input matrix.
-        # self.rng_key, subkey = jax.random.split(self.rng_key)
-        # g_net = get_model_factory(self.model_setup['g_net_setup']).create_model(subkey)
-        # init_params['g_net_params'] = g_net.init_params
+        # Create the parametrized control input matrix.
+        if 'g_net_setup' in self.model_setup:
+            self.rng_key, subkey = jax.random.split(self.rng_key)
+            g_net = get_model_factory(self.model_setup['g_net_setup']).create_model(subkey)
+            init_params['g_net_params'] = g_net.init_params
 
         # Create the J matrix.
         assert (self.input_dim % 2 == 0)
@@ -71,12 +75,8 @@ class PHNODE(NODE):
         
         def forward(params, x, u=None):
 
-            H_net_params = params['H_net_params']
-            R_net_params = params['R_net_params']
-            # g_net_params = params['g_net_params']
-
             # Put a jax.vmap around this to fix the R_val thing.
-            def f_approximator(x, t=0):
+            def f_approximator(x, t, u):
                 """
                 The system dynamics formulated using Hamiltonian mechanics.
                 """
@@ -84,27 +84,28 @@ class PHNODE(NODE):
                 # This sum is not a real sum. It is just a quick way to get the
                 # output of the Hamiltonian network into scalar form so that we
                 # can take its gradient.
-                H = lambda x : jnp.sum(
-                    H_net.forward(params=H_net_params, x=x))
+                H = lambda x : jnp.sum(H_net.forward(params=params['H_net_params'], x=x))
                 dh = jax.grad(H)(x)
-                R_val = R_net.forward(R_net_params, x)
-                # g_val = g_net.forward(g_net_params, x)
-                return jnp.matmul(J - R_val, dh) # + jnp.matmul(g_val, u)
+
+                out = jnp.matmul(J, dh)
+
+                if 'R_net_setup' in self.model_setup:
+                    R_val = R_net.forward(params['R_net_params'], x)
+                    out = out - jnp.matmul(R_val, dh)
+
+                if 'g_net_setup' in self.model_setup:
+                    g_val = g_net.forward(params['g_net_params'], x)
+                    out = out + jnp.matmul(g_val, u)
+
+                return out
 
                 # R = jnp.array([[0.0, 0.0], [0.0, 0.5]])
-                # return jnp.matmul(J - R, dh)
+                # return jnp.matmul(J, dh)
 
             # Fix the control to be constant during numerical integration.
-            f_fixed_control = lambda x, t=0 : f_approximator(x, t)#, u)
+            f_fixed_control = lambda x, t=0 : f_approximator(x, t, u)
 
-            k1 = f_fixed_control(x)
-            k2 = f_fixed_control(x + self.dt/2 * k1)
-            k3 = f_fixed_control(x + self.dt/2 * k2)
-            k4 = f_fixed_control(x + self.dt * k3)
-
-            out = x + self.dt/6 * (k1 + 2 * k2 + 2 * k3 + k4)
-
-            return out
+            return integrator(f_fixed_control, x, 0, self.dt)
 
         forward = jax.jit(forward)
         forward = jax.vmap(forward, in_axes=(None, 0))
