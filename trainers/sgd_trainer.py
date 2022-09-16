@@ -4,13 +4,14 @@ import optax
 from functools import partial
 from tqdm import tqdm
 from helpers.optimizer_factories import get_optimizer
+from .loss_functions import get_loss_function
 
 class SGDTrainer(object):
     """
     Class containing the methods and data necessary to train a model.
     """
     def __init__(self,
-                forward,
+                model,
                 init_params,
                 trainer_setup):
         """
@@ -18,10 +19,8 @@ class SGDTrainer(object):
 
         Parameters
         ----------
-        forward :
-            The forward model.
-            forward(params, x) evaluates the model instantiated with parameters 
-            params on the input x.
+        model :
+            The model to be trained.
         init_params :
             The initial state of the parameters.
         trainer_setup:
@@ -32,54 +31,22 @@ class SGDTrainer(object):
         self.params = init_params
 
         self.trainer_setup = trainer_setup
-        self.pen_l2_nn_params = float(trainer_setup['pen_l2_nn_params'])
 
         self.results = {
-            'training.loss' : {'steps' : [], 'values' : []},
-            'testing.loss' : {'steps' : [], 'values' : []},
+            'training.total_loss' : {'steps' : [], 'values' : []},
+            'testing.total_loss' : {'steps' : [], 'values' : []},
         }
 
         self._init_optimizer()
-        self._init_trainer(forward)
+        self._init_trainer(model)
 
     def _init_optimizer(self):
         self.optimizer = get_optimizer(self.optimizer_setup)
         self.opt_state = self.optimizer.init(self.params)
 
-    def _init_trainer(self, forward):
+    def _init_trainer(self, model):
 
-        pen_l2_nn_params = self.pen_l2_nn_params
-
-        @jax.jit
-        def loss(params, 
-                x : jnp.ndarray, 
-                y : jnp.ndarray) -> jnp.float32:
-            """
-            Loss function
-
-            Parameters
-            ----------
-            params :
-                The parameters of the forward model.
-            x :
-                Array representing the input(s) on which to evaluate the forward model.
-                The last axis should index the dimensions of the individual datapoints.
-            y : 
-                Array representing the labeled model output(s).
-                The last axis should index the dimensions of the individual datapoints.
-
-            Returns
-            -------
-            total_loss :
-                The computed loss on the labeled datapoints.
-            """
-            out = forward(params, x)
-            num_datapoints = x.shape[0]
-            data_loss = jnp.sum((out - y)**2) / num_datapoints
-            regularization_loss = pen_l2_nn_params * \
-                sum(jnp.sum(jnp.square(p)) for p in jax.tree_util.tree_leaves(params))
-            total_loss = data_loss + regularization_loss
-            return total_loss, total_loss
+        loss = get_loss_function(model, self.trainer_setup['loss_setup'])
 
         @partial(jax.jit, static_argnums=(0,))
         def update(optimizer, 
@@ -105,11 +72,11 @@ class SGDTrainer(object):
                 Array representing the labeled model output(s).
                 The last axis should index the dimensions of the individual datapoints.
             """
-            grads, loss_val = jax.grad(loss, argnums=0, has_aux=True)(params, x, y)
+            grads, loss_vals = jax.grad(loss, argnums=0, has_aux=True)(params, x, y)
             updates, new_opt_state = optimizer.update(grads, opt_state, params)
             new_params = optax.apply_updates(params, updates)
 
-            return new_params, new_opt_state, loss_val
+            return new_params, new_opt_state, loss_vals
 
         self.loss = loss
         self.update = update
@@ -136,12 +103,14 @@ class SGDTrainer(object):
 
         training_dataset_size = training_dataset['inputs'].shape[0]
 
-        if len(self.results['training.loss']['steps']) == 0:
+        if len(self.results['training.total_loss']['steps']) == 0:
             completed_steps_offset = 0
         else:
-            completed_steps_offset = max(self.results['training.loss']['steps']) + 1
+            completed_steps_offset = max(self.results['training.total_loss']['steps']) + 1
 
         for step in tqdm(range(self.trainer_setup['num_training_steps'])):
+
+            # Sample a minibatch of datapoints for this training step.
             rng_key, subkey = jax.random.split(rng_key)
 
             minibatch_sample_indeces = \
@@ -153,7 +122,8 @@ class SGDTrainer(object):
             minibatch_in = training_dataset['inputs'][minibatch_sample_indeces, :]
             minibatch_out = training_dataset['outputs'][minibatch_sample_indeces, :]
 
-            self.params, self.opt_state, loss_val = \
+            # Compute the gradient on the sampled minibatch
+            self.params, self.opt_state, loss_vals = \
                 self.update(self.optimizer,
                             self.opt_state,
                             self.params,
@@ -161,15 +131,32 @@ class SGDTrainer(object):
                             minibatch_out)
             
             # compute the loss on the testing dataset
-            test_loss, _ = self.loss(self.params, 
+            _, test_loss_vals = self.loss(self.params, 
                                         testing_dataset['inputs'][:, :],
                                         testing_dataset['outputs'][:, :])
-            
-            self.results['training.loss']['steps'].append(step + completed_steps_offset)
-            self.results['testing.loss']['steps'].append(step + completed_steps_offset)
-            self.results['training.loss']['values'].append(float(loss_val))
-            self.results['testing.loss']['values'].append(float(test_loss))
 
-            if sacred_runner is not None:
-                sacred_runner.log_scalar('training.loss', float(loss_val), step + completed_steps_offset)
-                sacred_runner.log_scalar('testing.loss', float(test_loss), step + completed_steps_offset)
+            # Save the training loss values
+            for key in loss_vals.keys():
+                if 'training.' + key not in self.results.keys():
+                    self.results['training.' + key] = {'steps' : [], 'values' : []}
+                self.results['training.' + key]['steps'].append(step + completed_steps_offset)
+                self.results['training.' + key]['values'].append(float(loss_vals[key]))
+                if sacred_runner is not None:
+                    sacred_runner.log_scalar(
+                            'training.' + key, 
+                            float(loss_vals[key]), 
+                            step + completed_steps_offset
+                        )
+
+            # Save the testing loss values
+            for key in test_loss_vals.keys():
+                if 'testing.' + key not in self.results.keys():
+                    self.results['testing.' + key] = {'steps' : [], 'values' : []}
+                self.results['testing.' + key]['steps'].append(step + completed_steps_offset)
+                self.results['testing.' + key]['values'].append(float(test_loss_vals[key]))
+                if sacred_runner is not None:
+                    sacred_runner.log_scalar(
+                            'testing.' + key, 
+                            float(test_loss_vals[key]), 
+                            step + completed_steps_offset
+                        )

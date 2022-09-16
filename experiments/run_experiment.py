@@ -26,8 +26,8 @@ from sacred.observers import FileStorageObserver
 # experiment_name = 'Autoencoder MLP Pendulum'
 # experiment_name = 'Autoencoder NODE Pendulum'
 # experiment_name = 'Vanilla NODE Damped Spring Mass'
-# experiment_name = 'Port Hamiltonian NODE Damped Spring Mass'
-experiment_name = 'Port Hamiltonian Node Nonlinear Damped Spring Mass'
+experiment_name = 'Port Hamiltonian NODE Damped Spring Mass'
+# experiment_name = 'Port Hamiltonian Node Nonlinear Damped Spring Mass'
 # experiment_name = 'Port Hamiltonian Node Damped Spring Mass Known Damping'
 # experiment_name = 'Vanilla NODE Nonlinear Damped Spring Mass with Control Inputs'
 # experiment_name = 'Port Hamiltonian Node Nonlinear Damped Spring Mass with Control Inputs'
@@ -49,8 +49,8 @@ def config():
     # ex.add_config('configurations/train_autoencoder_mlp_pendulum.yml')
     # ex.add_config('configurations/train_autoencoder_node_pendulum.yml')
     # ex.add_config('configurations/train_neural_ode_damped_spring_mass.yml')
-    # ex.add_config('configurations/train_phnode_damped_spring_mass.yml')
-    ex.add_config('configurations/train_phnode_nonlinear_damped_spring_mass.yml')
+    ex.add_config('configurations/train_phnode_damped_spring_mass.yml')
+    # ex.add_config('configurations/train_phnode_nonlinear_damped_spring_mass.yml')
     # ex.add_config('configurations/train_phnode_known_damping_spring_mass.yml')
     # ex.add_config('configurations/train_neural_ode_nonlinear_damped_control_spring_mass.yml')
     # ex.add_config('configurations/train_phnode_nonlindear_damped_control_spring_mass.yml')

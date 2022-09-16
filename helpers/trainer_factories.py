@@ -20,7 +20,7 @@ class SGDTrainerFactory(trainerFactory):
         """Create a standard SGD model trainer object."""
         from trainers.sgd_trainer import SGDTrainer
 
-        return SGDTrainer(model.forward,
+        return SGDTrainer(model,
                             model.init_params,
                             self.trainer_setup)
 
@@ -31,7 +31,7 @@ class NodeTrainerWithControlFactory(trainerFactory):
         """Create a NODE trainer with controls."""
         from trainers.node_trainer_with_control import NodeTrainerWithControl
 
-        return NodeTrainerWithControl(model.forward,
+        return NodeTrainerWithControl(model,
                                         model.init_params,
                                         self.trainer_setup)
 
@@ -61,23 +61,11 @@ class CompositionalPHNodeTrainerFactory(trainerFactory):
                                 submodel_trainer_list=submodel_trainer_list, 
                                 trainer_setup=self.trainer_setup)
 
-class PHNODETrainerFactory(trainerFactory):
-    """Factory method that creates a standard SGD model trainer object."""
-
-    def create_trainer(self, model):
-        """Create a standard SGD model trainer object."""
-        from trainers.phnode_trainer import PHNODETrainer
-
-        return PHNODETrainer(model,
-                            model.init_params,
-                            self.trainer_setup)
-
 # A mapping from the names of the trainer types to the 
 # appropriate trainer factories.
 trainer_factories = {
     'sgd' : SGDTrainerFactory,
     'node_with_control' : NodeTrainerWithControlFactory,
-    'phnode' : PHNODETrainerFactory,
     'compositional_phnode' : CompositionalPHNodeTrainerFactory,
 }
 

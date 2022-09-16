@@ -21,7 +21,9 @@ trainer_setup:
   trainer_type: 'sgd'
   num_training_steps: 10000
   minibatch_size: 32
-  pen_l2_nn_params: 0.0
+  loss_setup:
+    loss_function_type: 'l2_loss'
+    pen_l2_nn_params: !!float 1e-8 # 0.0
   optimizer_setup:
     name: 'adamw'
-    learning_rate : !!float 1e-4
+    learning_rate : !!float 1e-3

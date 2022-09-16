@@ -11,7 +11,7 @@ class NodeTrainerWithControl(SGDTrainer):
     Class containing the methods and data necessary to train a model.
     """
     def __init__(self,
-                forward,
+                model,
                 init_params,
                 trainer_setup):
         """
@@ -19,19 +19,18 @@ class NodeTrainerWithControl(SGDTrainer):
 
         Parameters
         ----------
-        forward :
-            The forward model.
-            forward(params, x) evaluates the model instantiated with parameters 
-            params on the input x.
+        model :
+            The model to be trained.
         init_params :
             The initial state of the parameters.
         trainer_setup:
             A dictionary containing setup information for the trainer.
         """
-        super().__init__(forward, init_params, trainer_setup)
+        super().__init__(model, init_params, trainer_setup)
 
-    def _init_trainer(self, forward):
-
+    def _init_trainer(self, model):
+     
+        forward = model.forward
         pen_l2_nn_params = self.pen_l2_nn_params
 
         @jax.jit
