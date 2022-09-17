@@ -94,7 +94,7 @@ class Environment(object):
             control_input = self.control_policy(state, t, subkey)
 
             key, subkey = jax.random.split(key)
-            f = lambda x, t : self.dynamics_function(state, t, control_input, subkey)
+            f = lambda x, t : self.dynamics_function(x, t, control_input, subkey)
             
             next_state = self.integrator(f, state, t, self._dt)
             return next_state, control_input
@@ -157,6 +157,12 @@ class Environment(object):
                                 endpoint=False, 
                                 dtype=jnp.float32)
         # xnextVal = self.solve_analytical(init_state, tIndexes)
+
+        # dyn_function = lambda state, t : self.dynamics_function(state, t, jnp.array([0.0]), None)
+        # xnextVal = odeint(dyn_function, init_state, t=tIndexes, rtol=1e-10, atol=1e-10)
+        # control_inputs = jnp.zeros((trajectory_num_steps, 1))
+
+        # return xnextVal, tIndexes, control_inputs
 
         xnextVal = [init_state]
         control_inputs = []

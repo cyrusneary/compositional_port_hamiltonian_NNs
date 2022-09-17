@@ -45,6 +45,10 @@ class DoubleMassSpring(Environment):
         The unstretched length of spring 2 [m].
     b2 :
         The damping coefficient on mass 2 [Ns/m].
+    state_measure_spring_elongation : bool
+        If True, the state of the system is measured as the elongation of the springs.
+    nonlinear_damping : bool
+        If True, the damping force is given by c \dot{q}^3 .
     name : 
         The name of the environment.
     """
@@ -60,7 +64,8 @@ class DoubleMassSpring(Environment):
                 k2 : jnp.float32 = 1,
                 y2 : jnp.float32 = 1,
                 b2 : jnp.float32 = 0.0,
-                state_measure_spring_elongation=True,
+                state_measure_spring_elongation : bool =True,
+                nonlinear_damping : bool = False,
                 name : str = 'Double_Spring_Mass'
                 ):
         """
@@ -80,6 +85,7 @@ class DoubleMassSpring(Environment):
         self.b2 = b2
 
         self.state_measure_spring_elongation = state_measure_spring_elongation
+        self.nonlinear_damping = nonlinear_damping
 
         self.config = {
             'dt' : dt,
@@ -92,77 +98,103 @@ class DoubleMassSpring(Environment):
             'y2' : y2,
             'b2' : b2,
             'state_measure_spring_elongation' : state_measure_spring_elongation,
+            'nonlinear_damping' : nonlinear_damping,
             'name' : name,
         }
 
-    def PE(self, q, p):
-        """
-        The system's potential energy.
-        """
-        if self.state_measure_spring_elongation:
-            return 1/2 * self.k1 * q[0]**2 + 1/2 * self.k2 * q[1]**2
-        else:
-            return 1/2 * self.k1 * (q[0] - self.y1)**2 + 1/2 * self.k2 * ((q[1] - q[0]) - self.y2)**2
+    def _define_dynamics(self):
 
-    def KE(self, q, p):
-        """
-        The system's kinetic energy.
-        """
-        return p[0]**2 / (2 * self.m1) + p[1]**2 / (2 * self.m2)
+        def PE(state):
+            """
+            The system's potential energy.
+            """
+            q1 = state[0]
+            q2 = state[2]
+            if self.state_measure_spring_elongation:
+                return 1/2 * self.k1 * q1**2 + 1/2 * self.k2 * q2**2
+            else:
+                return 1/2 * self.k1 * (q1 - self.y1)**2 + 1/2 * self.k2 * ((q2 - q1) - self.y2)**2
 
-    def H(self, q, p):
-        """
-        The system's Hamiltonian.
-        """
-        return self.KE(q,p) + self.PE(q,p)
+        def KE(state):
+            """
+            The system's kinetic energy.
+            """
+            p1 = state[1]
+            p2 = state[3]
+            return p1**2 / (2 * self.m1) + p2**2 / (2 * self.m2)
 
-    @partial(jax.jit, static_argnums=0)
-    def hamiltonian_dynamics(self, 
-                                state : jnp.ndarray, 
-                                t: jnp.ndarray=None,
-                                ) -> jnp.ndarray:
-        """
-        The system dynamics formulated using Hamiltonian mechanics.
-        """
-        q = state[0:2]
-        p = state[2:4]
-        dh_dq = jax.grad(self.H, argnums=0)(q,p)
-        dh_dp = jax.grad(self.H, argnums=1)(q,p)
-        dh = jnp.hstack([dh_dq, dh_dp]).transpose()
-        
-        if self.state_measure_spring_elongation:
-            J = jnp.array([[0.0, 0.0, 1.0, 0.0], 
-                            [0.0, 0.0, -1.0, 1.0], 
-                            [-1.0, 1.0, 0.0, 0.0], 
-                            [0.0, -1.0, 0.0, 0.0]])
-        else:
-            J = jnp.array([[0.0, 0.0, 1.0, 0.0], 
-                            [0.0, 0.0, 0.0, 1.0], 
-                            [-1.0, 0.0, 0.0, 0.0], 
-                            [0.0, -1.0, 0.0, 0.0]])
-        R = jnp.zeros(J.shape)
-        return jnp.matmul(J - R, dh)
+        def H(state):
+            """
+            The system's Hamiltonian.
+            """
+            return KE(state) + PE(state)
 
-    @partial(jax.jit, static_argnums=(0,))
-    def dynamics_function(self, 
-                    state : np.ndarray, 
-                    t: np.ndarray=None,
-                    ) -> np.ndarray:
-        """ 
-        Full known dynamics
-        """
-        q1, q2, p1, p2 = state
-        if self.state_measure_spring_elongation:
-            q1_dot = p1 / self.m1
-            q2_dot = p2 / self.m2 - p1 / self.m1
-            p1_dot = - self.k1 * q1 + self.k2 * q2
-            p2_dot = - self.k2 * q2
-        else:
-            q1_dot = p1 / self.m1
-            q2_dot = p2 / self.m2
-            p1_dot = - (self.k1 * (q1 - self.y1) + self.k2 * (q1 + self.y2 - q2))
-            p2_dot = - (self.k2 * (q2 - q1 - self.y2))
-        return jnp.stack([q1_dot, q2_dot, p1_dot, p2_dot])
+        def dynamics_function(state : jnp.ndarray, 
+                                    t: jnp.float32,
+                                    control_input : jnp.ndarray = jnp.array([0.0]),
+                                    jax_key : jax.random.PRNGKey = None,
+                                    ) -> jnp.ndarray:
+            """
+            The system dynamics formulated using Hamiltonian mechanics.
+            """ 
+            dh = jax.grad(self.H)(state)
+
+            if self.state_measure_spring_elongation:
+                J = jnp.array([[0.0, 1.0, 0.0, 0.0],
+                                [-1.0, 0.0, 1.0, 0.0],
+                                [0.0, -1.0, 0.0, 1.0],
+                                [0.0, 0.0, -1.0, 0.0]])
+            else:
+                J = jnp.array([[0.0, 1.0, 0.0, 0.0],
+                                [-1.0, 0.0, 0.0, 0.0],
+                                [0.0, 0.0, 0.0, 1.0],
+                                [0.0, 0.0, -1.0, 0.0]])
+
+            if self.nonlinear_damping:
+                p1 = state[1]
+                p2 = state[3]
+                damping1 = self.b1 * p1**2 / self.m1**2
+                damping2 = self.b2 * p2**2 / self.m2**2
+            else:
+                damping1 = self.b1
+                damping2 = self.b2
+            R = jnp.array([[0.0, 0.0, 0.0, 0.0],
+                        [0.0, damping1, 0.0, 0.0],
+                        [0.0, 0.0, 0.0, 0.0],
+                        [0.0, 0.0, 0.0, damping2]])
+
+            g = jnp.array([[0.0, 0.0, 0.0, 1.0]]).transpose()
+
+            return jnp.matmul(J - R, dh) + jnp.matmul(g, control_input)
+
+        # def dynamics_function(state : jnp.ndarray, 
+        #                 t: jnp.float32,
+        #                 control_input : jnp.ndarray,
+        #                 jax_key : jax.random.PRNGKey = None,
+        #                 ) -> jnp.ndarray:
+        #     """ 
+        #     Full known dynamics
+        #     """
+        #     q1 = state[0]
+        #     p1 = state[1]
+        #     q2 = state[2]
+        #     p2 = state[3]
+        #     if self.state_measure_spring_elongation:
+        #         q1_dot = p1 / self.m1
+        #         q2_dot = p2 / self.m2 - p1 / self.m1
+        #         p1_dot = - self.k1 * q1 + self.k2 * q2
+        #         p2_dot = - self.k2 * q2 + control_input[0]
+        #     else:
+        #         q1_dot = p1 / self.m1
+        #         q2_dot = p2 / self.m2
+        #         p1_dot = - (self.k1 * (q1 - self.y1) + self.k2 * (q1 + self.y2 - q2))
+        #         p2_dot = - (self.k2 * (q2 - q1 - self.y2)) + control_input[0]
+        #     return jnp.stack([q1_dot, p1_dot, q2_dot, p2_dot])
+
+        self.PE = jax.jit(PE)
+        self.KE = jax.jit(KE)
+        self.H = jax.jit(H)
+        self.dynamics_function = jax.jit(dynamics_function)
 
     def plot_trajectory(self, trajectory, fontsize=15, linewidth=3):
         """
@@ -175,10 +207,10 @@ class DoubleMassSpring(Environment):
         # We want to plot the positions of the masses, not the elongations of the springs
         if self.state_measure_spring_elongation:
             q1 = trajectory[:, 0] + self.y1 * jnp.ones(trajectory[:,0].shape)
-            q2 = trajectory[:, 1] + q1 + self.y2 * jnp.ones(trajectory[:,1].shape)
+            q2 = trajectory[:, 2] + q1 + self.y2 * jnp.ones(trajectory[:,2].shape)
         else:
             q1 = trajectory[:, 0]
-            q2 = trajectory[:, 1]
+            q2 = trajectory[:, 2]
 
         ax = fig.add_subplot(211)
         ax.plot(T, q1, linewidth=linewidth, color='blue', label='q1')
@@ -188,7 +220,7 @@ class DoubleMassSpring(Environment):
         ax.grid()
         ax.legend()
 
-        p1 = trajectory[:, 2]
+        p1 = trajectory[:, 1]
         p2 = trajectory[:, 3]
         ax = fig.add_subplot(212)
         ax.plot(T, p1, linewidth=linewidth, color='blue', label='p1')
@@ -208,11 +240,9 @@ class DoubleMassSpring(Environment):
 
         T = np.arange(trajectory.shape[0]) * self._dt
 
-        q = trajectory[:, 0:2]
-        p = trajectory[:, 2:4]
-        KE = jax.vmap(self.KE)(q, p)
-        PE = jax.vmap(self.PE)(q, p)
-        H = jax.vmap(self.H)(q, p)
+        KE = jax.vmap(self.KE, in_axes=(0,))(trajectory)
+        PE = jax.vmap(self.PE, in_axes=(0,))(trajectory)
+        H = jax.vmap(self.H, in_axes=(0,))(trajectory)
 
         ax = fig.add_subplot(111)
         ax.plot(T, KE, color='red', linewidth=linewidth, label='Kinetic Energy')
@@ -227,22 +257,36 @@ class DoubleMassSpring(Environment):
         plt.show()
 
 def main():
-    env = DoubleMassSpring(dt=0.01, random_seed=21, state_measure_spring_elongation=False)
+    env = DoubleMassSpring(dt=0.01,
+                            m1=10.0,
+                            m2=7.0,
+                            k1=1.2,
+                            k2=1.5,
+                            b1=1.7,
+                            b2=1.5,
+                            random_seed=20, 
+                            state_measure_spring_elongation=True,
+                            nonlinear_damping=True,)
+
+    def control_policy(state, t, jax_key):
+        # return 5.0 * jax.random.uniform(jax_key, shape=(1,), minval = -1.0, maxval=1.0)
+        return jnp.array([jnp.sin(t)])
+    env.set_control_policy(control_policy)
 
     curdir = os.path.abspath(os.path.curdir)
-    save_dir = os.path.abspath(os.path.join(curdir, 'simulated_data'))
+    save_dir = os.path.abspath(os.path.join(curdir, 'double_mass_spring_data'))
 
     t = time.time()
-    # dataset = env.gen_dataset(trajectory_num_steps=500, 
-    #                             num_trajectories=1000, # 500 training, 100 testing
-    #                             x0_init_lb=jnp.array([-0.2, -0.2, -0.5, -0.5]),
-    #                             x0_init_ub=jnp.array([0.2, 0.2, 0.5, 0.5]),
-    #                             save_str=save_dir)
     dataset = env.gen_dataset(trajectory_num_steps=500, 
-                                num_trajectories=200, 
-                                x0_init_lb=jnp.array([0.8, 1.6, -0.5, -0.5]),
-                                x0_init_ub=jnp.array([1.2, 2.4, 0.5, 0.5]),
+                                num_trajectories=200, # 500 training, 100 testing
+                                x0_init_lb=jnp.array([-0.2, -0.5, -0.2, -0.5]),
+                                x0_init_ub=jnp.array([0.2, 0.5, 0.2, 0.5]),
                                 save_str=save_dir)
+    # dataset = env.gen_dataset(trajectory_num_steps=1000, 
+    #                             num_trajectories=20, 
+    #                             x0_init_lb=jnp.array([0.8, -0.5, 1.6, -0.5]),
+    #                             x0_init_ub=jnp.array([1.2, 0.5, 2.4, 0.5]),
+    #                             save_str=save_dir)
 
     print(time.time() - t)
     print(dataset.keys())
