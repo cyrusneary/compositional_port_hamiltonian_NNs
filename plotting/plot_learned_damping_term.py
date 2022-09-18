@@ -24,11 +24,13 @@ states = jnp.stack([q_vals, p_vals], -1)
 
 damping_matrix = model.R_net_forward(params, states)
 
-damping_values = jnp.multiply(damping_matrix[:, 1, 1], p_vals)
+mass = 1.0
+
+damping_values = jnp.multiply(damping_matrix[:, 1, 1], p_vals / mass)
 # damping_values = damping_matrix[:, 0, 0]
 
-b = 0.5
-true_damping_values = b * p_vals**3
+b = 1.7
+true_damping_values = b * p_vals**3 / mass**3
 
 import matplotlib.pyplot as plt
 fig = plt.figure()

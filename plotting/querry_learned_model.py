@@ -23,3 +23,9 @@ a = jnp.array([[0.0, 0.0]])
 predicted_R_mat = model.R_net_forward(params, a)
 
 print(predicted_R_mat)
+
+if 'g_net_setup' in model.model_setup:
+    print(model.g_net_forward(params, a))
+
+if 'J_net_setup' in model.model_setup:
+    print(model.J_net_forward(params, a))

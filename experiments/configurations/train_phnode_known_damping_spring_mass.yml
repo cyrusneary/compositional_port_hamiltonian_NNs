@@ -17,6 +17,9 @@ model_setup:
     nn_setup_params:
         output_sizes: [32, 32, 1]
         activation: 'tanh'
+  J_net_setup:
+    model_type : 'known_matrix'
+    matrix: [[0.0, 1.0], [-1.0, 0.0]]
   R_net_setup:
     model_type : 'known_matrix'
     matrix : [[0.0, 0.0], [0.0, 0.5]]
@@ -28,6 +31,7 @@ trainer_setup:
     loss_function_type: 'phnode_loss' 
     pen_l2_nn_params: 0.0
     pen_l1_dissipation_params : 0.0 # !!float 1e-7 ##!!float 1e-4
+    pen_l1_structure_params : 0.0 # !!float 1e-7
   optimizer_setup:
     name: 'adam'
     learning_rate : !!float 1e-3

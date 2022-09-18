@@ -81,6 +81,35 @@ class SGDTrainer(object):
         self.loss = loss
         self.update = update
 
+    def record_results(self, 
+                        step : int, 
+                        loss_vals : dict, 
+                        prefix : str = 'training.', 
+                        sacred_runner = None):
+        """
+        Record the loss values for a given step.
+
+        Parameters
+        ----------
+        step : int
+            The current step of training.
+        loss_vals : jnp.ndarray
+            The loss values to be recorded.
+        prefix : str
+            The prefix to be used to identify the loss values.
+        """
+        for key in loss_vals.keys():
+            if prefix + key not in self.results.keys():
+                self.results[prefix + key] = {'steps' : [], 'values' : []}
+            self.results[prefix + key]['steps'].append(step)
+            self.results[prefix + key]['values'].append(float(loss_vals[key]))
+            if sacred_runner is not None:
+                sacred_runner.log_scalar(
+                        prefix + key, 
+                        float(loss_vals[key]), 
+                        step
+                    )
+
     # @partial(jax.jit, static_argnums=(0,7))
     def train(self,
                 training_dataset : jnp.ndarray,
@@ -136,27 +165,39 @@ class SGDTrainer(object):
                                         testing_dataset['outputs'][:, :])
 
             # Save the training loss values
-            for key in loss_vals.keys():
-                if 'training.' + key not in self.results.keys():
-                    self.results['training.' + key] = {'steps' : [], 'values' : []}
-                self.results['training.' + key]['steps'].append(step + completed_steps_offset)
-                self.results['training.' + key]['values'].append(float(loss_vals[key]))
-                if sacred_runner is not None:
-                    sacred_runner.log_scalar(
-                            'training.' + key, 
-                            float(loss_vals[key]), 
-                            step + completed_steps_offset
-                        )
+            self.record_results(step + completed_steps_offset,
+                                loss_vals,
+                                prefix='training.',
+                                sacred_runner=sacred_runner)
 
             # Save the testing loss values
-            for key in test_loss_vals.keys():
-                if 'testing.' + key not in self.results.keys():
-                    self.results['testing.' + key] = {'steps' : [], 'values' : []}
-                self.results['testing.' + key]['steps'].append(step + completed_steps_offset)
-                self.results['testing.' + key]['values'].append(float(test_loss_vals[key]))
-                if sacred_runner is not None:
-                    sacred_runner.log_scalar(
-                            'testing.' + key, 
-                            float(test_loss_vals[key]), 
-                            step + completed_steps_offset
-                        )
+            self.record_results(step + completed_steps_offset,
+                                test_loss_vals,
+                                prefix='testing.',
+                                sacred_runner=sacred_runner)
+
+            # # Save the training loss values
+            # for key in loss_vals.keys():
+            #     if 'training.' + key not in self.results.keys():
+            #         self.results['training.' + key] = {'steps' : [], 'values' : []}
+            #     self.results['training.' + key]['steps'].append(step + completed_steps_offset)
+            #     self.results['training.' + key]['values'].append(float(loss_vals[key]))
+            #     if sacred_runner is not None:
+            #         sacred_runner.log_scalar(
+            #                 'training.' + key, 
+            #                 float(loss_vals[key]), 
+            #                 step + completed_steps_offset
+            #             )
+
+            # # Save the testing loss values
+            # for key in test_loss_vals.keys():
+            #     if 'testing.' + key not in self.results.keys():
+            #         self.results['testing.' + key] = {'steps' : [], 'values' : []}
+            #     self.results['testing.' + key]['steps'].append(step + completed_steps_offset)
+            #     self.results['testing.' + key]['values'].append(float(test_loss_vals[key]))
+            #     if sacred_runner is not None:
+            #         sacred_runner.log_scalar(
+            #                 'testing.' + key, 
+            #                 float(test_loss_vals[key]), 
+            #                 step + completed_steps_offset
+            #             )
