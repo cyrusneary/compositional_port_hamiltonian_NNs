@@ -1,9 +1,11 @@
-experiment_name : 'nonlinear damped double spring mass with control inputs vanilla NODE'
+experiment_name : 'Vanilla NODE Double spring mass with control and nonlinear damping'
 dataset_setup : 
   dataset_type : 'trajectory'
-  train_dataset_file_name : '100_traj_Double_Spring_Mass_2022-09-17-16-54-21.pkl'
-  test_dataset_file_name : '20_traj_Double_Spring_Mass_2022-09-17-16-54-52.pkl'
+  train_dataset_file_name : 'training_Double_Spring_Mass_2022-09-17-20-16-22.pkl'
+  test_dataset_file_name : 'testing_Double_Spring_Mass_2022-09-17-20-18-08.pkl'
   dataset_path : '../environments/double_mass_spring_data'
+  num_training_trajectories : 100
+  num_testing_trajectories : 20
 model_setup:
   model_type : 'node'
   input_dim : 5 # 2 dimensions for state, 1 for control
@@ -22,7 +24,7 @@ model_setup:
         activation: 'tanh'
 trainer_setup:
   trainer_type: 'node_with_control'
-  num_training_steps: 10000
+  num_training_steps: 20000
   minibatch_size: 32
   loss_setup : 
     loss_function_type: 'l2_loss_with_control'

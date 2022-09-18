@@ -150,19 +150,30 @@ class TrajectoryDataLoader(DataLoader):
         train_trajectories = self.load_from_pickle(dataset_path, train_dataset_file_name)
         test_trajectories = self.load_from_pickle(dataset_path, test_dataset_file_name)
 
+        # Specify a specific number of trajectories to use within the datasets.
+        if 'num_training_trajectories' in self.dataset_setup:
+            num_training_trajectories = self.dataset_setup['num_training_trajectories']
+        else:
+            num_training_trajectories = train_trajectories['state_trajectories'].shape[0]
+        
+        if 'num_testing_trajectories' in self.dataset_setup:
+            num_testing_trajectories = self.dataset_setup['num_testing_trajectories']
+        else:
+            num_testing_trajectories = test_trajectories['state_trajectories'].shape[0]
+
         train_dataset = {
-            'inputs' : train_trajectories['state_trajectories'][:, :-1, :],
-            'outputs' : train_trajectories['state_trajectories'][:, 1:, :],
+            'inputs' : train_trajectories['state_trajectories'][0:num_training_trajectories, :-1, :],
+            'outputs' : train_trajectories['state_trajectories'][0:num_training_trajectories, 1:, :],
         }
         if 'control_inputs' in train_trajectories:
-            train_dataset['control_inputs'] = train_trajectories['control_inputs'][:, :-1, :]
+            train_dataset['control_inputs'] = train_trajectories['control_inputs'][0:num_training_trajectories, :-1, :]
 
         test_dataset = {
-            'inputs' : test_trajectories['state_trajectories'][:, :-1, :],
-            'outputs' : test_trajectories['state_trajectories'][:, 1:, :]
+            'inputs' : test_trajectories['state_trajectories'][0:num_testing_trajectories, :-1, :],
+            'outputs' : test_trajectories['state_trajectories'][0:num_testing_trajectories, 1:, :]
         }
         if 'control_inputs' in test_trajectories:
-            test_dataset['control_inputs'] = test_trajectories['control_inputs'][:, :-1, :]
+            test_dataset['control_inputs'] = test_trajectories['control_inputs'][0:num_testing_trajectories, :-1, :]
 
         train_dataset = self.reshape_dataset(train_dataset)
         print('Train dataset input shape: {}'.format(train_dataset['inputs'].shape))
@@ -230,18 +241,30 @@ class TrajectoryMultiModelDataLoader(TrajectoryDataLoader):
         except:
             "Train dataset file name not specified in dataset_setup dictionary."
 
+        # Specify a specific number of trajectories to use within the datasets.
+        if 'num_testing_trajectories' in self.dataset_setup:
+            num_testing_trajectories = self.dataset_setup['num_testing_trajectories']
+        else:
+            num_testing_trajectories = test_trajectories['state_trajectories'].shape[0]
+
         train_dataset = []
         for i in range(len(train_dataset_file_name)):
             dset_trajectories = self.load_from_pickle(
                                         dataset_path, 
                                         train_dataset_file_name[i]
                                     )
+            # Specify a specific number of trajectories to use within the datasets.
+            if 'num_training_trajectories' in self.dataset_setup:
+                num_training_trajectories = self.dataset_setup['num_training_trajectories']
+            else:
+                num_training_trajectories = dset_trajectories['state_trajectories'].shape[0]
+
             dset = {
-                'inputs' : dset_trajectories['state_trajectories'][:, :-1, :],
-                'outputs' : dset_trajectories['state_trajectories'][:, 1:, :],
+                'inputs' : dset_trajectories['state_trajectories'][0:num_training_trajectories, :-1, :],
+                'outputs' : dset_trajectories['state_trajectories'][0:num_training_trajectories, 1:, :],
             }
             if 'control_inputs' in dset_trajectories:
-                dset['control_inputs'] = dset_trajectories['control_inputs'][:, :-1, :]
+                dset['control_inputs'] = dset_trajectories['control_inputs'][0:num_training_trajectories, :-1, :]
             dset = self.reshape_dataset(dset)
             train_dataset.append(dset)
             print('Train dataset {} input shape: {}'.format(i, dset['inputs'].shape))
@@ -253,11 +276,11 @@ class TrajectoryMultiModelDataLoader(TrajectoryDataLoader):
             "Test dataset file name not specified in dataset_setup dictionary."
         test_trajectories = self.load_from_pickle(dataset_path, test_dataset_file_name)
         test_dataset = {
-            'inputs' : test_trajectories['state_trajectories'][:, :-1, :],
-            'outputs' : test_trajectories['state_trajectories'][:, 1:, :]
+            'inputs' : test_trajectories['state_trajectories'][0:num_testing_trajectories, :-1, :],
+            'outputs' : test_trajectories['state_trajectories'][0:num_testing_trajectories, 1:, :]
         }
         if 'control_inputs' in test_trajectories:
-            test_dataset['control_inputs'] = test_trajectories['control_inputs'][:, :-1, :]
+            test_dataset['control_inputs'] = test_trajectories['control_inputs'][0:num_testing_trajectories, :-1, :]
         test_dataset = self.reshape_dataset(test_dataset)
         print('Test dataset input shape: {}'.format(test_dataset['inputs'].shape))
         print('Test dataset output shape: {}'.format(test_dataset['outputs'].shape))

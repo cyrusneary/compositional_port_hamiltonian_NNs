@@ -1,9 +1,11 @@
-experiment_name : 'damped spring mass port Hamiltonian NODE'
+experiment_name : 'Monolithic pH NODE Unknown J(x) Double spring mass with control and nonlinear damping'
 dataset_setup : 
   dataset_type : 'trajectory'
-  train_dataset_file_name : '100_traj_Double_Spring_Mass_2022-09-17-16-54-21.pkl'
-  test_dataset_file_name : '20_traj_Double_Spring_Mass_2022-09-17-16-54-52.pkl'
+  train_dataset_file_name : 'training_Double_Spring_Mass_2022-09-17-20-16-22.pkl'
+  test_dataset_file_name : 'testing_Double_Spring_Mass_2022-09-17-20-18-08.pkl'
   dataset_path : '../environments/double_mass_spring_data'
+  num_training_trajectories : 100
+  num_testing_trajectories : 20
 model_setup:
   model_type : 'phnode'
   input_dim : 5
@@ -21,11 +23,8 @@ model_setup:
         output_sizes: [32, 32, 1]
         activation: 'tanh'
   J_net_setup:
-    model_type : 'known_matrix'
-    matrix : [[0.0, 1.0, 0.0, 0.0],
-              [-1.0, 0.0, 1.0, 0.0],
-              [0.0, -1.0, 0.0, 1.0],
-              [0.0, 0.0, -1.0, 0.0]]
+    model_type : 'parametrized_constant_skew_symmetric_matrix'
+    matrix_shape : [4,4]
   R_net_setup:
     model_type : 'parametrized_matrix'
     matrix_shape : [4,4]
@@ -35,15 +34,15 @@ model_setup:
       input_dim : 4
       output_dim: 2
       nn_setup_params:
-        output_sizes: [16, 16, 2]
+        output_sizes: [32, 32, 2]
         activation : 'tanh'
   g_net_setup :
     model_type : 'parametrized_constant_matrix'
     matrix_shape : [4,1]
-    parametrized_indeces : [[0,0], [0.0], [0.0], [1,0]]
+    parametrized_indeces : [[0,0], [1,0], [2,0], [3,0]]
 trainer_setup:
   trainer_type: 'node_with_control'
-  num_training_steps: 10000
+  num_training_steps: 20000
   minibatch_size: 32
   loss_setup:
     loss_function_type: 'phnode_with_control_loss' 

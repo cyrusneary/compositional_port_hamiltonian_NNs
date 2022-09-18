@@ -1,9 +1,11 @@
-experiment_name : 'damped spring mass port Hamiltonian NODE'
+experiment_name : 'Submodel 1 Damped spring mass port Hamiltonian NODE'
 dataset_setup : 
   dataset_type : 'trajectory'
-  train_dataset_file_name : '100_traj_submodel1_spring_mass.pkl'
-  test_dataset_file_name : '20_traj_submodel1_spring_mass_2022-09-17-16-52-00.pkl'
+  train_dataset_file_name : 'training_submodel1_spring_mass_2022-09-17-19-57-16.pkl'
+  test_dataset_file_name : 'testing_submodel1_spring_mass_2022-09-17-19-59-25.pkl'
   dataset_path : '../environments/double_mass_spring_submodel_data'
+  num_training_trajectories : 100
+  num_testing_trajectories : 20
 model_setup:
   model_type : 'phnode'
   input_dim : 2
@@ -29,11 +31,11 @@ model_setup:
       input_dim : 2
       output_dim: 1
       nn_setup_params:
-        output_sizes: [16, 16, 1]
+        output_sizes: [32, 32, 1]
         activation : 'tanh'
 trainer_setup:
   trainer_type: 'sgd'
-  num_training_steps: 10000
+  num_training_steps: 20000
   minibatch_size: 32
   loss_setup:
     loss_function_type: 'phnode_loss' 

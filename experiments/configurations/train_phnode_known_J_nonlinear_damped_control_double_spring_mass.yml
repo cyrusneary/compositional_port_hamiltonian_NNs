@@ -1,42 +1,48 @@
-experiment_name : 'Submodel 2 Controlled damped spring mass port Hamiltonian NODE'
+experiment_name : 'Monolithic pH NODE Known J(x) Double spring mass with control and nonlinear damping'
 dataset_setup : 
   dataset_type : 'trajectory'
-  train_dataset_file_name : 'training_submodel2_spring_mass_2022-09-17-20-10-12.pkl'
-  test_dataset_file_name : 'testing_submodel2_spring_mass_2022-09-17-20-12-19.pkl'
-  dataset_path : '../environments/double_mass_spring_submodel_data'
+  train_dataset_file_name : 'training_Double_Spring_Mass_2022-09-17-20-16-22.pkl'
+  test_dataset_file_name : 'testing_Double_Spring_Mass_2022-09-17-20-18-08.pkl'
+  dataset_path : '../environments/double_mass_spring_data'
   num_training_trajectories : 100
   num_testing_trajectories : 20
 model_setup:
   model_type : 'phnode'
-  input_dim : 2
-  output_dim: 2
+  input_dim : 5
+  output_dim: 4
   dt : 0.01
   integrator : 'rk4'
   control_inputs : True
-  state_dim : 2
+  state_dim : 4
   control_dim : 1
   H_net_setup:
     model_type : 'mlp'
-    input_dim : 2
+    input_dim : 4
     output_dim: 1
     nn_setup_params:
         output_sizes: [32, 32, 1]
         activation: 'tanh'
+  J_net_setup:
+    model_type : 'known_matrix'
+    matrix : [[0.0, 1.0, 0.0, 0.0],
+              [-1.0, 0.0, 1.0, 0.0],
+              [0.0, -1.0, 0.0, 1.0],
+              [0.0, 0.0, -1.0, 0.0]]
   R_net_setup:
     model_type : 'parametrized_matrix'
-    matrix_shape : [2,2]
-    parametrized_indeces : [[1,1]]
+    matrix_shape : [4,4]
+    parametrized_indeces : [[1,1], [3,3]]
     mlp_setup_params:
       model_type : 'mlp'
-      input_dim : 2
-      output_dim: 1
+      input_dim : 4
+      output_dim: 2
       nn_setup_params:
-        output_sizes: [32, 32, 1]
+        output_sizes: [32, 32, 2]
         activation : 'tanh'
   g_net_setup :
     model_type : 'parametrized_constant_matrix'
-    matrix_shape : [2,1]
-    parametrized_indeces : [[0,0], [1,0]]
+    matrix_shape : [4,1]
+    parametrized_indeces : [[0,0], [1,0], [2,0], [3,0]]
 trainer_setup:
   trainer_type: 'node_with_control'
   num_training_steps: 20000

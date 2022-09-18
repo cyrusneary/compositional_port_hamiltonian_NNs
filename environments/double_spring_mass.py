@@ -264,7 +264,7 @@ def main():
                             k2=1.5,
                             b1=1.7,
                             b2=1.5,
-                            random_seed=42, 
+                            random_seed=501, 
                             state_measure_spring_elongation=True,
                             nonlinear_damping=True,)
 
@@ -278,7 +278,7 @@ def main():
 
     t = time.time()
     dataset = env.gen_dataset(trajectory_num_steps=500, 
-                                num_trajectories=20, # 500 training, 100 testing
+                                num_trajectories=200, # 500 training, 100 testing
                                 x0_init_lb=jnp.array([-0.2, -0.5, -0.2, -0.5]),
                                 x0_init_ub=jnp.array([0.2, 0.5, 0.2, 0.5]),
                                 save_str=save_dir)

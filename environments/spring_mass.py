@@ -234,9 +234,9 @@ class MassSpring(Environment):
 def main():
     env = MassSpring(dt=0.01, 
                     m=1.0, 
-                    k=1.2, 
-                    b=1.7, 
-                    random_seed=42, 
+                    k=1.5, 
+                    b=1.5, 
+                    random_seed=32, 
                     nonlinear_damping=True)
 
     def control_policy(state, t, jax_key):
@@ -248,7 +248,7 @@ def main():
         # return jnp.array([action])
 
         # return 5.0 * jax.random.uniform(jax_key, shape=(1,), minval = -1.0, maxval=1.0)
-        return jnp.array([0.0])
+        return jnp.array([jnp.sin(t)])
 
     env.set_control_policy(control_policy)
 
@@ -257,7 +257,7 @@ def main():
     t = time.time()
     print('starting simulation')
     dataset = env.gen_dataset(trajectory_num_steps=500, # 500
-                                num_trajectories=100, # 200 for training, 20 for testing
+                                num_trajectories=200, # 200 for training, 20 for testing
                                 x0_init_lb=jnp.array([-1.0, -1.0]),
                                 x0_init_ub=jnp.array([1.0, 1.0]),
                                 save_str=save_dir,)

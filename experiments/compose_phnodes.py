@@ -18,8 +18,8 @@ import jax
 import numpy as np
 import matplotlib.pyplot as plt
 
-submodel0_run_id = 494
-submodel1_run_id = 484
+submodel0_run_id = 515 # 494
+submodel1_run_id = 516 # 484
 
 sacred_save_path = os.path.abspath('sacred_runs/')
 
@@ -64,9 +64,11 @@ from helpers.dataloader import load_dataset_from_setup
 
 dataset_setup = {
     'dataset_type' : 'trajectory',
-    'train_dataset_file_name' : '100_traj_Double_Spring_Mass_2022-09-17-16-54-21.pkl',
-    'test_dataset_file_name' : '20_traj_Double_Spring_Mass_2022-09-17-16-54-52.pkl',
+    'train_dataset_file_name' : 'training_Double_Spring_Mass_2022-09-17-20-16-22.pkl',
+    'test_dataset_file_name' : 'testing_Double_Spring_Mass_2022-09-17-20-18-08.pkl',
     'dataset_path' : '../environments/double_mass_spring_data',
+    'num_training_trajectories' : 100,
+    'num_testing_trajectories' : 20,
 } 
 
 train_dataset, test_dataset = load_dataset_from_setup(dataset_setup)
