@@ -36,7 +36,7 @@ class PHNODE(NODE):
             rng_key=rng_key,
             model_setup=model_setup,
         )
-        
+
     def _build_neural_ode(self):
         """ 
         This function builds a neural network to directly estimate future state 
