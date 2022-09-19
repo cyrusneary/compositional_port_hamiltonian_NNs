@@ -133,3 +133,5 @@ dmypy.json
 *.pkl
 
 *sacred_runs/
+
+*tikz/
