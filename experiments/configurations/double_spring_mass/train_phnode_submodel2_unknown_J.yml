@@ -1,0 +1,54 @@
+experiment_name : 'Submodel 2 Controlled damped spring mass port Hamiltonian NODE'
+dataset_setup : 
+  dataset_type : 'trajectory'
+  train_dataset_file_name : 'training_submodel2_spring_mass_2022-09-17-20-10-12.pkl'
+  test_dataset_file_name : 'testing_submodel2_spring_mass_2022-09-17-20-12-19.pkl'
+  dataset_path : '../environments/double_mass_spring_submodel_data'
+  num_training_trajectories : 100
+  num_testing_trajectories : 20
+model_setup:
+  model_type : 'phnode'
+  input_dim : 2
+  output_dim: 2
+  dt : 0.01
+  integrator : 'rk4'
+  control_inputs : True
+  state_dim : 2
+  control_dim : 1
+  J_net_setup : 
+    model_type : 'parametrized_constant_skew_symmetric_matrix'
+    matrix_shape : [2,2]
+  H_net_setup:
+    model_type : 'mlp'
+    input_dim : 2
+    output_dim: 1
+    nn_setup_params:
+        output_sizes: [32, 32, 1]
+        activation: 'tanh'
+  R_net_setup:
+    model_type : 'parametrized_matrix'
+    matrix_shape : [2,2]
+    parametrized_indeces : [[1,1]]
+    mlp_setup_params:
+      model_type : 'mlp'
+      input_dim : 2
+      output_dim: 1
+      nn_setup_params:
+        output_sizes: [32, 32, 1]
+        activation : 'tanh'
+  g_net_setup :
+    model_type : 'parametrized_constant_matrix'
+    matrix_shape : [2,1]
+    parametrized_indeces : [[0,0], [1,0]]
+trainer_setup:
+  trainer_type: 'node_with_control'
+  num_training_steps: 20000
+  minibatch_size: 32
+  loss_setup:
+    loss_function_type: 'phnode_with_control_loss' 
+    pen_l2_nn_params: 0.0
+    pen_l1_dissipation_params : 0.0 # !!float 1e-6 # !!float 1e-8 # !!float 1e-4
+    pen_l1_control_params : 0.0 # !!float 1e-6
+  optimizer_setup:
+    name: 'adam'
+    learning_rate : !!float 1e-3

@@ -21,14 +21,6 @@ import matplotlib.pyplot as plt
 submodel0_run_id = 515 # 494
 submodel1_run_id = 516 # 484
 
-sacred_save_path = os.path.abspath('sacred_runs/')
-
-config0 = load_config_file(submodel0_run_id, sacred_save_path)
-submodel0, params0 = load_model(submodel0_run_id, sacred_save_path)
-
-config1 = load_config_file(submodel1_run_id, sacred_save_path)
-submodel1, params1 = load_model(submodel1_run_id, sacred_save_path)
-
 model_setup = {
     'model_type' : 'compositional_phnode',
     'input_dim' : 5,
@@ -46,8 +38,9 @@ model_setup = {
                     [0.0, 0.0, -1.0, 0.0]]
     },
     'num_submodels' : 2,
-    'submodel0_setup' : submodel0.model_setup,
-    'submodel1_setup' : submodel1.model_setup,
+    'load_pretrained_submodels' : True,
+    'submodel0_run_id' : submodel0_run_id,
+    'submodel1_run_id' : submodel1_run_id,
 }
 
 rng_key = jax.random.PRNGKey(0)
@@ -56,8 +49,6 @@ rng_key, subkey = jax.random.split(rng_key)
 model = get_model_factory(model_setup).create_model(subkey)
 
 params = model.init_params
-params['submodel0_params'] = params0
-params['submodel1_params'] = params1
 
 # Load data from the true composite model.
 from helpers.dataloader import load_dataset_from_setup
@@ -72,6 +63,19 @@ dataset_setup = {
 } 
 
 train_dataset, test_dataset = load_dataset_from_setup(dataset_setup)
+
+num_datapoints = 10
+datapoint_indeces = np.random.choice(len(train_dataset['inputs']), num_datapoints, replace=False)
+
+x = train_dataset['inputs'][datapoint_indeces]
+y = train_dataset['outputs'][datapoint_indeces]
+u = train_dataset['control_inputs'][datapoint_indeces]
+
+J_mat = model.infer_constant_J_matrix(params, x, u, y)
+
+print(jnp.array(J_mat))
+
+model.set_constant_J_matrix(J_mat)
 
 def control_policy(state, t):
     return jnp.array([jnp.sin(t)])
