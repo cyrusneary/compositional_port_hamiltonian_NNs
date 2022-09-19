@@ -81,14 +81,14 @@ class CompositionalPHNODE(NODE):
         b = jnp.hstack(b_vec)
         A = jnp.vstack(H_bar_vec)
 
-        J_vec = jnp.linalg.lstsq(A, b, rcond=None)[0]
+        J_vec, residuals, rank, singular_values = jnp.linalg.lstsq(A, b, rcond=None)
 
         J_mat = [[0.0, J_vec[0], J_vec[1], J_vec[2]], 
                         [-J_vec[0], 0.0, J_vec[3], J_vec[4]], 
                         [-J_vec[1], -J_vec[3], 0.0, J_vec[5]], 
                         [-J_vec[2], -J_vec[4], -J_vec[5], 0.0]]
 
-        return J_mat
+        return J_mat, residuals, rank
 
     def set_constant_J_matrix(self, J):
         """

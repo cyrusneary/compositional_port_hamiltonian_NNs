@@ -14,9 +14,10 @@ def l2_loss_constructor(model, loss_function_setup):
         out = forward(params, x)
         num_datapoints = x.shape[0]
         
-        # data_loss = jnp.sum((out - y)**2) / num_datapoints
-        data_loss = jnp.average(jnp.linalg.norm(out - y, axis=1, ord=2))
-        normalized_data_loss = data_loss / jnp.average(jnp.linalg.norm(y, axis=1, ord=2))
+        data_loss = jnp.sum((out - y)**2) / num_datapoints
+        normalized_data_loss = data_loss / (jnp.sum(y**2) / num_datapoints)
+        # data_loss = jnp.average(jnp.linalg.norm(out - y, axis=1, ord=2))
+        # normalized_data_loss = jnp.sqrt(data_loss) / jnp.average(jnp.linalg.norm(y, axis=1, ord=2))
 
         regularization_loss = pen_l2_nn_params * \
             sum(jnp.sum(jnp.square(p)) for p in jax.tree_util.tree_leaves(params))
@@ -49,9 +50,10 @@ def l2_loss_with_control_constructor(model, loss_function_setup):
         out = forward(params, x, u)
         num_datapoints = x.shape[0]
         
-        # data_loss = jnp.sum((out - y)**2) / num_datapoints
-        data_loss = jnp.average(jnp.linalg.norm(out - y, axis=1, ord=2))
-        normalized_data_loss = data_loss / jnp.average(jnp.linalg.norm(y, axis=1, ord=2))
+        data_loss = jnp.sum((out - y)**2) / num_datapoints
+        normalized_data_loss = data_loss / (jnp.sum(y**2) / num_datapoints)
+        # data_loss = jnp.average(jnp.linalg.norm(out - y, axis=1, ord=2))
+        # normalized_data_loss = jnp.sqrt(data_loss) / jnp.average(jnp.linalg.norm(y, axis=1, ord=2))
 
         regularization_loss = pen_l2_nn_params * \
             sum(jnp.sum(jnp.square(p)) for p in jax.tree_util.tree_leaves(params))
@@ -106,9 +108,10 @@ def phnode_loss_constructor(model, loss_function_setup):
         out = model.forward(params, x, None)
         num_datapoints = x.shape[0]
         
-        # data_loss = jnp.sum((out - y)**2) / num_datapoints
-        data_loss = jnp.average(jnp.linalg.norm(out - y, axis=1, ord=2)) 
-        normalized_data_loss = data_loss / jnp.average(jnp.linalg.norm(y, axis=1, ord=2))
+        data_loss = jnp.sum((out - y)**2) / num_datapoints
+        normalized_data_loss = data_loss / (jnp.sum(y**2) / num_datapoints)
+        # data_loss = jnp.average(jnp.linalg.norm(out - y, axis=1, ord=2))
+        # normalized_data_loss = data_loss / jnp.average(jnp.linalg.norm(y, axis=1, ord=2))
 
         regularization_loss = pen_l2_nn_params * \
             sum(jnp.sum(jnp.square(p)) 
@@ -181,9 +184,10 @@ def phnode_with_control_loss_constructor(model, loss_function_setup):
         out = model.forward(params, x, u)
         num_datapoints = x.shape[0]
         
-        # data_loss = jnp.sum((out - y)**2) / num_datapoints
-        data_loss = jnp.average(jnp.linalg.norm(out - y, axis=1, ord=2))
-        normalized_data_loss = data_loss / jnp.average(jnp.linalg.norm(y, axis=1, ord=2))
+        data_loss = jnp.sum((out - y)**2) / num_datapoints
+        normalized_data_loss = data_loss / (jnp.sum(y**2) / num_datapoints)
+        # data_loss = jnp.average(jnp.linalg.norm(out - y, axis=1, ord=2))
+        # normalized_data_loss = jnp.sqrt(data_loss) / jnp.average(jnp.linalg.norm(y, axis=1, ord=2))
 
         regularization_loss = pen_l2_nn_params * \
             sum(jnp.sum(jnp.square(p)) 
@@ -252,9 +256,12 @@ def compositional_phnode_with_control_loss_constructor(model, loss_function_setu
             The computed loss on the labeled datapoints.
         """
         out = model.forward(params, x, u)
+        num_datapoints = x.shape[0]
         
-        data_loss = jnp.average(jnp.linalg.norm(out - y, axis=1, ord=2))
-        normalized_data_loss = data_loss / jnp.average(jnp.linalg.norm(y, axis=1, ord=2))
+        data_loss = jnp.sum((out - y)**2) / num_datapoints
+        normalized_data_loss = data_loss / (jnp.sum(y**2) / num_datapoints)
+        # data_loss = jnp.average(jnp.linalg.norm(out - y, axis=1, ord=2))
+        # normalized_data_loss = data_loss / jnp.average(jnp.linalg.norm(y, axis=1, ord=2))
         
         total_loss = data_loss
         

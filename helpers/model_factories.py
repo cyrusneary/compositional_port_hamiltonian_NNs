@@ -127,6 +127,14 @@ class ParametrizedConstantSkewSymmetricMatrixFactory(ModelFactory):
         return ParametrizedConstantSkewSymmetricMatrix(rng_key=rng_key,
                                                 model_setup=self.model_setup)
 
+class ParametrizedPSDMatrix(ModelFactory):
+    """Factory that creates a parametrized symmetric positive matrix."""
+
+    def create_model(self, rng_key : jax.random.PRNGKey):
+        from models.parametrized_psd_matrix import ParametrizedPSDMatrix
+        return ParametrizedPSDMatrix(rng_key=rng_key,
+                                        model_setup=self.model_setup)
+
 model_factories = {
     'node' : NodeFactory,
     'hnode' : HamiltonianNodeFactory,
@@ -138,7 +146,8 @@ model_factories = {
     'parametrized_constant_matrix' : ParametrizedConstantMatrixFactory,
     'parametrized_matrix' : ParametrizedMatrixFactory,
     'known_matrix' : KnownMatrixFactory,
-    'parametrized_constant_skew_symmetric_matrix' : ParametrizedConstantSkewSymmetricMatrixFactory
+    'parametrized_constant_skew_symmetric_matrix' : ParametrizedConstantSkewSymmetricMatrixFactory,
+    'parametrized_psd_matrix' : ParametrizedPSDMatrix
 }
 
 def get_model_factory(model_setup):
