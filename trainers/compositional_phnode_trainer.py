@@ -4,12 +4,15 @@ import jax
 from functools import partial
 from tqdm import tqdm
 
-class CompositionalPHNodeTrainer(object):
+from trainers.sgd_trainer import SGDTrainer
+from .loss_functions import get_loss_function
+
+class CompositionalPHNodeTrainer(SGDTrainer):
     """
     Class containing the methods and data necessary to train a model.
     """
     def __init__(self,
-                forward,
+                model,
                 init_params : list,
                 submodel_trainer_list : list,
                 trainer_setup : dict):
@@ -18,10 +21,8 @@ class CompositionalPHNodeTrainer(object):
 
         Parameters
         ----------
-        forward :
-            The forward model.
-            forward(params, x) evaluates the composite port-Hailtonian model 
-            instantiated with parameters list "params" on the input "x".
+        model : 
+            The model to train.
         init_params :
             A list of the initial states of the parameters for the various submodels.
         optimizer_setup :
@@ -29,62 +30,32 @@ class CompositionalPHNodeTrainer(object):
         trainer_setup:
             A dictionary containing setup information for the trainer.
         """
-
-        self.submodel_trainer_list = submodel_trainer_list
-
-        self.init_params = deepcopy(init_params)
-        self.params = deepcopy(init_params)
-
-        self.num_submodels = len(submodel_trainer_list)
-
-        self.num_training_steps = trainer_setup['num_training_steps']
+        ################
+        self.init_params = init_params
+        self.params = init_params
 
         self.trainer_setup = trainer_setup
 
+        self.submodel_trainer_list = submodel_trainer_list
+        self.num_submodels = len(submodel_trainer_list)
+
         self.results = {
-                'training.loss' : {},
-                'testing.loss' : {'steps' : [], 'values' : []},
-            }
-        for trainer_ind in range(self.num_submodels):
-            self.results['training.loss']['submodel_{}'.format(trainer_ind)] = \
-                {'steps' : [], 'values' : []}
+            # 'training' : {},
+            'testing.total_loss' : {'steps' : [], 'values' : []},
+        }
+        # for trainer_ind in range(self.num_submodels):
+        #     self.results['training']['submodel_{}'.format(trainer_ind)] = \
+        #         {'steps' : [], 'values' : []}
 
-        self._init_trainer(forward)
+        self.model = model
 
-    def _init_trainer(self, forward):
+        self._init_trainer(model)
 
-        @partial(jax.jit)
-        def loss(params : list, 
-                x : jnp.ndarray, 
-                y : jnp.ndarray) -> jnp.float32:
-            """
-            Loss function
-
-            Parameters
-            ----------
-            params :
-                A list containint the parameters of the submodels.
-            x :
-                Array representing the input(s) on which to evaluate the forward model.
-                The last axis should index the dimensions of the individual datapoints.
-            y : 
-                Array representing the labeled model output(s).
-                The last axis should index the dimensions of the individual datapoints.
-
-            Returns
-            -------
-            total_loss :
-                The computed loss on the labeled datapoints.
-            """
-            out = forward(params, x)
-            num_datapoints = x.shape[0]
-            data_loss = jnp.sum((out - y)**2) / num_datapoints
-            return data_loss, data_loss
-
-        self.loss = loss
+    def _init_trainer(self, model):
+        self.loss = get_loss_function(model, self.trainer_setup['loss_setup'])
 
     def train(self,
-                training_dataset : list,
+                training_dataset : jnp.ndarray,
                 testing_dataset : jnp.ndarray,
                 rng_key : jax.random.PRNGKey,
                 sacred_runner=None):
@@ -102,22 +73,18 @@ class CompositionalPHNodeTrainer(object):
         assert (training_dataset is not None) \
             and (testing_dataset is not None)
 
-        assert len(training_dataset) == self.num_submodels, \
-            "The number of training datasets should equal the number of submodels."
-
         training_dataset_sizes = []
         for trainer_ind in range(self.num_submodels):
             training_dataset_sizes.append(
                     training_dataset[trainer_ind]['inputs'].shape[0]
                 )
-                
-        if len(self.results['testing.loss']['steps']) == 0:
+
+        if len(self.results['testing.total_loss']['steps']) == 0:
             completed_steps_offset = 0
         else:
-            completed_steps_offset = \
-                max(self.results['testing.loss']['steps']) + 1
+            completed_steps_offset = max(self.results['testing.total_loss']['steps']) + 1
 
-        for step in tqdm(range(self.num_training_steps)):
+        for step in tqdm(range(self.trainer_setup['num_training_steps'])):
 
             # Update each of the submodels individually 
             # on their training datasets.
@@ -142,42 +109,47 @@ class CompositionalPHNodeTrainer(object):
                 minibatch_out = training_dataset[trainer_ind]['outputs']\
                     [minibatch_sample_indeces, :]
 
-                self.params[trainer_ind], \
-                    subtrainer.opt_state, \
-                        loss_val = \
-                            subtrainer.update(
-                                    subtrainer.optimizer,
-                                    subtrainer.opt_state,
-                                    self.params[trainer_ind],
-                                    minibatch_in,
-                                    minibatch_out
-                                )
+                if 'control_inputs' in training_dataset[trainer_ind] \
+                    and self.model.model_setup['submodel{}_setup'.format(trainer_ind)]['control_inputs']:
+                    minibatch_u = training_dataset[trainer_ind]['control_inputs']\
+                        [minibatch_sample_indeces, :]
+                    self.params['submodel{}_params'.format(trainer_ind)], \
+                        subtrainer.opt_state, \
+                            loss_vals = \
+                                subtrainer.update(
+                                        subtrainer.optimizer,
+                                        subtrainer.opt_state,
+                                        self.params['submodel{}_params'.format(trainer_ind)],
+                                        minibatch_in,
+                                        minibatch_u,
+                                        minibatch_out
+                                    )
+                else:
+                    self.params['submodel{}_params'.format(trainer_ind)], \
+                        subtrainer.opt_state, \
+                            loss_vals = \
+                                subtrainer.update(
+                                        subtrainer.optimizer,
+                                        subtrainer.opt_state,
+                                        self.params['submodel{}_params'.format(trainer_ind)],
+                                        minibatch_in,
+                                        minibatch_out
+                                    )
+
+                # Save the training loss values
+                self.record_results(step + completed_steps_offset,
+                                    loss_vals,
+                                    prefix='training.'+'submodel{}.'.format(trainer_ind),
+                                    sacred_runner=sacred_runner)
             
-                self.results['training.loss']\
-                    ['submodel_{}'.format(trainer_ind)]\
-                        ['steps'].append(step + completed_steps_offset)
-                self.results['training.loss']\
-                    ['submodel_{}'.format(trainer_ind)]\
-                        ['values'].append(float(loss_val))                
-
-                if sacred_runner is not None:
-                    sacred_runner.log_scalar(
-                            'training.loss.submodel{}'.format(trainer_ind), 
-                            float(loss_val), 
-                            step + completed_steps_offset
-                        )
-
-            # compute the loss for the composite model on the testing dataset
-            test_loss, _ = self.loss(self.params, 
+            # compute the loss on the testing dataset
+            _, test_loss_vals = self.loss(self.params, 
                                         testing_dataset['inputs'][:, :],
+                                        testing_dataset['control_inputs'][:, :],
                                         testing_dataset['outputs'][:, :])
-            
-            self.results['testing.loss']['steps'].append(step + completed_steps_offset)
-            self.results['testing.loss']['values'].append(float(test_loss))
 
-            if sacred_runner is not None:
-                sacred_runner.log_scalar(
-                        'testing.loss', 
-                        float(test_loss), 
-                        step + completed_steps_offset
-                    )
+            # Save the testing loss values
+            self.record_results(step + completed_steps_offset,
+                                test_loss_vals,
+                                prefix='testing.',
+                                sacred_runner=sacred_runner)
