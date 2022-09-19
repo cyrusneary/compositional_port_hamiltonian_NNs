@@ -224,12 +224,57 @@ def phnode_with_control_loss_constructor(model, loss_function_setup):
 
     return loss
 
+def compositional_phnode_with_control_loss_constructor(model, loss_function_setup):
+
+    def loss(params, 
+            x : jnp.ndarray,
+            u : jnp.ndarray, 
+            y : jnp.ndarray) -> jnp.float32:
+        """
+        Loss function
+
+        Parameters
+        ----------
+        params :
+            The parameters of the forward model.
+        x :
+            Array representing the input(s) on which to evaluate the forward model.
+            The last axis should index the dimensions of the individual datapoints.
+        u : 
+            Array representing the control input(s) on which to evaluate the forward model.
+        y : 
+            Array representing the labeled model output(s).
+            The last axis should index the dimensions of the individual datapoints.
+
+        Returns
+        -------
+        total_loss :
+            The computed loss on the labeled datapoints.
+        """
+        out = model.forward(params, x, u)
+        
+        data_loss = jnp.average(jnp.linalg.norm(out - y, axis=1, ord=2))
+        normalized_data_loss = data_loss / jnp.average(jnp.linalg.norm(y, axis=1, ord=2))
+        
+        total_loss = data_loss
+        
+        loss_values = {
+            'total_loss' : total_loss,
+            'data_loss' : data_loss,
+            'normalized_data_loss' : normalized_data_loss
+        }
+
+        return total_loss, loss_values
+
+    return loss
+
 ###############################################################################
 loss_function_factory ={
     'l2_loss' : l2_loss_constructor,
     'l2_loss_with_control' : l2_loss_with_control_constructor,
     'phnode_loss' : phnode_loss_constructor,
     'phnode_with_control_loss' : phnode_with_control_loss_constructor,
+    'compositional_phnode_with_control_loss' : compositional_phnode_with_control_loss_constructor
 }
 
 def get_loss_function(model, loss_function_setup):
