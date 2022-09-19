@@ -233,7 +233,7 @@ class TrajectoryMultiModelDataLoader(TrajectoryDataLoader):
             A dictionary containing the dataset.
         """
         try:
-            dataset_path = self.dataset_setup['dataset_path']
+            train_dataset_path = self.dataset_setup['train_dataset_path']
         except:
             "Dataset path not specified in dataset_setup dictionary."
         try:
@@ -250,7 +250,7 @@ class TrajectoryMultiModelDataLoader(TrajectoryDataLoader):
         train_dataset = []
         for i in range(len(train_dataset_file_name)):
             dset_trajectories = self.load_from_pickle(
-                                        dataset_path, 
+                                        train_dataset_path, 
                                         train_dataset_file_name[i]
                                     )
             # Specify a specific number of trajectories to use within the datasets.
@@ -271,10 +271,14 @@ class TrajectoryMultiModelDataLoader(TrajectoryDataLoader):
             print('Train dataset {} output shape: {}'.format(i, dset['outputs'].shape))
 
         try:
+            test_dataset_path = self.dataset_setup['test_dataset_path']
+        except:
+            "Dataset path not specified in dataset_setup dictionary."
+        try:
             test_dataset_file_name = self.dataset_setup['test_dataset_file_name']
         except:
             "Test dataset file name not specified in dataset_setup dictionary."
-        test_trajectories = self.load_from_pickle(dataset_path, test_dataset_file_name)
+        test_trajectories = self.load_from_pickle(test_dataset_path, test_dataset_file_name)
         test_dataset = {
             'inputs' : test_trajectories['state_trajectories'][0:num_testing_trajectories, :-1, :],
             'outputs' : test_trajectories['state_trajectories'][0:num_testing_trajectories, 1:, :]
