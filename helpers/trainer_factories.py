@@ -56,7 +56,7 @@ class CompositionalPHNodeTrainerFactory(trainerFactory):
             #                             trainer_setup=self.trainer_setup['subtrainer{}_setup'.format(submodel_ind)])
             submodel_trainer_list.append(trainer)
 
-        return CompositionalPHNodeTrainer(forward=model.forward,
+        return CompositionalPHNodeTrainer(model=model,
                                 init_params=model.init_params,
                                 submodel_trainer_list=submodel_trainer_list, 
                                 trainer_setup=self.trainer_setup)
