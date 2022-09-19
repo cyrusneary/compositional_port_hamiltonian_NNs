@@ -4,7 +4,7 @@ import jax.numpy as jnp
 from .neural_ode import NODE
 from .hamiltonian_neural_ode import HNODE
 
-import sys
+import sys, os
 sys.path.append('..')
 
 from helpers.model_factories import get_model_factory
@@ -14,12 +14,25 @@ import jax.numpy as jnp
 import jax.scipy.linalg as jla
 
 from helpers.integrator_factory import integrator_factory
+from plotting.common import load_model
+
+import numpy as np
+
+default_sacred_path = os.path.abspath(
+    os.path.join(
+        os.path.dirname(os.path.realpath(__file__)),
+        '..',
+        'experiments',
+        'sacred_runs'
+    )
+)
 
 class CompositionalPHNODE(NODE):
 
     def __init__(self,
                 rng_key : jax.random.PRNGKey,
                 model_setup : dict,
+                sacred_save_path : str = default_sacred_path,
                 ):
         """
         Constructor for the neural ODE.
@@ -34,8 +47,61 @@ class CompositionalPHNODE(NODE):
         model_setup : 
             Dictionary containing the details of the model to construct.
         """
+        self.sacred_save_path = sacred_save_path
         super().__init__(rng_key, model_setup)
         
+    def infer_constant_J_matrix(self, params, x, u, y):
+        """
+        Find the skew symmetric structure matrix of the port-Hamiltonian system,
+        assuming the rest of the model has been trained already, and that
+        the structure matrix can be described as being constant.
+        """
+        b_vec = []
+        H_bar_vec = []
+
+        dH = jax.grad(self.H_net_forward, argnums=1)
+        for i in range(x.shape[0]):
+            xi = x[i, :]
+            yi = y[i, :]
+            ui = u[i, :]
+
+            h = dH(params, xi)
+            r = jnp.matmul(self.R_net_forward(params, jnp.array([xi]))[0], h)
+            g = jnp.matmul(self.g_net_forward(params, jnp.array([xi]))[0], ui)
+
+            target = -(xi - yi) / self.dt - g + r
+            b_vec.append(target)
+
+            Hbar = jnp.array([[h[1], h[2], h[3], 0.0, 0.0, 0.0],
+                            [-h[0], 0.0, 0.0, h[2], h[4], 0.0],
+                            [0.0, -h[0], 0.0, -h[1], 0.0, h[3]],
+                            [0.0, 0.0, -h[0], 0.0, -h[1], -h[2]]])
+            H_bar_vec.append(Hbar)
+
+        b = jnp.hstack(b_vec)
+        A = jnp.vstack(H_bar_vec)
+
+        J_vec = jnp.linalg.lstsq(A, b, rcond=None)[0]
+
+        J_mat = [[0.0, J_vec[0], J_vec[1], J_vec[2]], 
+                        [-J_vec[0], 0.0, J_vec[3], J_vec[4]], 
+                        [-J_vec[1], -J_vec[3], 0.0, J_vec[5]], 
+                        [-J_vec[2], -J_vec[4], -J_vec[5], 0.0]]
+
+        return J_mat
+
+    def set_constant_J_matrix(self, J):
+        """
+        Set a constant structure matrix for the port-Hamiltonian system.
+        """
+        self.model_setup['J_net_setup'] = {
+            'model_type' : 'known_matrix',
+            'matrix' : J,
+        }
+
+        # Rebuild the phNODE with the new structure matrix.
+        self._build_neural_ode()
+
     def _build_neural_ode(self):
         """ 
         This function builds a neural network to directly estimate future state 
@@ -50,16 +116,26 @@ class CompositionalPHNODE(NODE):
         init_params = {}
         submodel_list = []
 
-        # Instantiate each submodel, each of which is itself a port-Hamiltonian neural ODE.
-        for submodel_ind in range(self.num_submodels):
-            self.rng_key, subkey = jax.random.split(self.rng_key)
+        if 'load_pretrained_submodels' in model_setup \
+            and model_setup['load_pretrained_submodels']:
+            for submodel_ind in range(self.num_submodels):
+                run_id = model_setup['submodel{}_run_id'.format(submodel_ind)]
+                submodel, params = load_model(run_id, self.sacred_save_path)
+                submodel_list.append(submodel)
+                init_params['submodel{}_params'.format(submodel_ind)] = params
 
-            submodel_setup = model_setup['submodel{}_setup'.format(submodel_ind)]
-            submodel = get_model_factory(submodel_setup).create_model(subkey)
+                model_setup['submodel{}_setup'.format(submodel_ind)] = submodel.model_setup
+        else:
+            # Instantiate each submodel, each of which is itself a port-Hamiltonian neural ODE.
+            for submodel_ind in range(self.num_submodels):
+                self.rng_key, subkey = jax.random.split(self.rng_key)
 
-            submodel_list.append(submodel)
-            # init_params.append(submodel.init_params)
-            init_params['submodel{}_params'.format(submodel_ind)] = submodel.init_params
+                submodel_setup = model_setup['submodel{}_setup'.format(submodel_ind)]
+                submodel = get_model_factory(submodel_setup).create_model(subkey)
+
+                submodel_list.append(submodel)
+                # init_params.append(submodel.init_params)
+                init_params['submodel{}_params'.format(submodel_ind)] = submodel.init_params
 
         # Create a dictionary to be able to separate the state and control 
         # vectors into the components relevant to the various submodels.
