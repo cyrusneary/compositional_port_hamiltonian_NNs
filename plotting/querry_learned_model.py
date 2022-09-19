@@ -19,7 +19,7 @@ datasets = load_dataset(sacred_run_index, sacred_save_path)
 print('Train dataset shape : {}'.format(datasets['train_dataset']['inputs'].shape))
 print('Test dataset shape : {}'.format(datasets['test_dataset']['inputs'].shape))
 
-a = jnp.array([[0.0, 0.0, 0.0, 0.0]])
+a = jnp.array([[0.0, 0.0]])
 predicted_R_mat = model.R_net_forward(params, a)
 
 print(predicted_R_mat)

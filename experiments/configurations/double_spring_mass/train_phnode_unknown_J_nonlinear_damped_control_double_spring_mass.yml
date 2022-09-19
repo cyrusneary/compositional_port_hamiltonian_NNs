@@ -26,16 +26,26 @@ model_setup:
     model_type : 'parametrized_constant_skew_symmetric_matrix'
     matrix_shape : [4,4]
   R_net_setup:
-    model_type : 'parametrized_matrix'
+    model_type : 'parametrized_psd_matrix'
     matrix_shape : [4,4]
-    parametrized_indeces : [[1,1], [3,3]]
     mlp_setup_params:
       model_type : 'mlp'
       input_dim : 4
-      output_dim: 2
+      output_dim: 10
       nn_setup_params:
-        output_sizes: [32, 32, 2]
+        output_sizes: [32, 32, 10]
         activation : 'tanh'
+  # R_net_setup:
+  #   model_type : 'parametrized_matrix'
+  #   matrix_shape : [4,4]
+  #   parametrized_indeces : [[1,1], [3,3]]
+  #   mlp_setup_params:
+  #     model_type : 'mlp'
+  #     input_dim : 4
+  #     output_dim: 2
+  #     nn_setup_params:
+  #       output_sizes: [32, 32, 2]
+  #       activation : 'tanh'
   g_net_setup :
     model_type : 'parametrized_constant_matrix'
     matrix_shape : [4,1]

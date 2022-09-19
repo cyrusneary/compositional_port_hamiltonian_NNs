@@ -18,8 +18,8 @@ import jax
 import numpy as np
 import matplotlib.pyplot as plt
 
-submodel0_run_id = 515 # 494
-submodel1_run_id = 516 # 484
+submodel0_run_id = 809 #739 #697 #695 (Unknown J) didn't work #694 (unknown J) worked #515 (known J) # 494
+submodel1_run_id = 810 #789 #698 #696 (Unknown J) didn't work #693 (unknown J) worked #516 (known J) # 484
 
 model_setup = {
     'model_type' : 'compositional_phnode',
@@ -71,9 +71,10 @@ x = train_dataset['inputs'][datapoint_indeces]
 y = train_dataset['outputs'][datapoint_indeces]
 u = train_dataset['control_inputs'][datapoint_indeces]
 
-J_mat = model.infer_constant_J_matrix(params, x, u, y)
+J_mat, residuals, rank = model.infer_constant_J_matrix(params, x, u, y)
 
 print(jnp.array(J_mat))
+print(residuals)
 
 model.set_constant_J_matrix(J_mat)
 

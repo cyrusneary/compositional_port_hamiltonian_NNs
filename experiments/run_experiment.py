@@ -17,32 +17,34 @@ ex = Experiment(experiment_name)
 
 ex.observers.append(FileStorageObserver('sacred_runs'))
 
-# @ex.config
-# def config():
-# #     # ex.add_config('configurations/train_mlp.yml')
-# #     # ex.add_config('configurations/train_mnist_autoencoder.yml')
-# #     # ex.add_config('configurations/train_mlp_double_spring_mass.yml')
-# #     # ex.add_config('configurations/train_neural_ode_spring_mass.yml')
-# #     # ex.add_config('configurations/train_hnode_spring_mass.yml')
-# #     # ex.add_config('configurations/train_neural_ode_double_spring_mass.yml')
-# #     # ex.add_config('configurations/train_hnode_double_spring_mass.yml')
-# #     # ex.add_config('configurations/train_phnode_double_spring_mass.yml')
-# #     # ex.add_config('configurations/train_autoencoder_mlp_pendulum.yml')
-# #     # ex.add_config('configurations/train_autoencoder_node_pendulum.yml')
-# #     # ex.add_config('configurations/train_neural_ode_damped_spring_mass.yml')
-# #     # ex.add_config('configurations/train_phnode_damped_spring_mass.yml')
-# #     # ex.add_config('configurations/train_phnode_nonlinear_damped_spring_mass.yml')
-# #     # ex.add_config('configurations/train_phnode_known_damping_spring_mass.yml')
-# #     # ex.add_config('configurations/train_neural_ode_nonlinear_damped_control_spring_mass.yml')
-# #     # ex.add_config('configurations/train_phnode_nonlindear_damped_control_spring_mass.yml')
-# #     # ex.add_config('configurations/train_neural_ode_nonlinear_damped_control_double_mass_spring.yml')
+@ex.config
+def config():
+#     # ex.add_config('configurations/train_mlp.yml')
+#     # ex.add_config('configurations/train_mnist_autoencoder.yml')
+#     # ex.add_config('configurations/train_mlp_double_spring_mass.yml')
+#     # ex.add_config('configurations/train_neural_ode_spring_mass.yml')
+#     # ex.add_config('configurations/train_hnode_spring_mass.yml')
+#     # ex.add_config('configurations/train_neural_ode_double_spring_mass.yml')
+#     # ex.add_config('configurations/train_hnode_double_spring_mass.yml')
+#     # ex.add_config('configurations/train_phnode_double_spring_mass.yml')
+#     # ex.add_config('configurations/train_autoencoder_mlp_pendulum.yml')
+#     # ex.add_config('configurations/train_autoencoder_node_pendulum.yml')
+#     # ex.add_config('configurations/train_neural_ode_damped_spring_mass.yml')
+    ex.add_config('configurations/train_phnode_damped_spring_mass.yml')
+#     # ex.add_config('configurations/train_phnode_nonlinear_damped_spring_mass.yml')
+#     # ex.add_config('configurations/train_phnode_known_damping_spring_mass.yml')
+#     # ex.add_config('configurations/train_neural_ode_nonlinear_damped_control_spring_mass.yml')
+#     # ex.add_config('configurations/train_phnode_nonlindear_damped_control_spring_mass.yml')
+#     # ex.add_config('configurations/train_neural_ode_nonlinear_damped_control_double_mass_spring.yml')
 
-#     ex.add_config('configurations/train_compositional_phnode_double_spring_mass.yml')
+    # ex.add_config('configurations/double_spring_mass/train_compositional_phnode_double_spring_mass.yml')
 
-# #     # ex.add_config('configurations/train_phnode_known_J_nonlinear_damped_control_double_spring_mass.yml')
-# #     # ex.add_config('configurations/train_phnode_unknown_J_nonlinear_damped_control_double_spring_mass.yml')
-# #     ex.add_config('configurations/train_phnode_submodel1.yml')
-# #     # ex.add_config('configurations/train_phnode_submodel2.yml')
+#     # ex.add_config('configurations/double_spring_mass/train_phnode_known_J_nonlinear_damped_control_double_spring_mass.yml')
+    # ex.add_config('configurations/double_spring_mass/train_phnode_unknown_J_nonlinear_damped_control_double_spring_mass.yml')
+    # ex.add_config('configurations/double_spring_mass/train_phnode_submodel1.yml')
+    # ex.add_config('configurations/double_spring_mass/train_phnode_submodel2.yml')
+    # ex.add_config('configurations/double_spring_mass/train_phnode_submodel1_unknown_J.yml')
+    # ex.add_config('configurations/double_spring_mass/train_phnode_submodel2_unknown_J.yml')
 
 @ex.automain
 def experiment_main(

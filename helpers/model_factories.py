@@ -118,6 +118,15 @@ class KnownMatrixFactory(ModelFactory):
         from models.known_matrix import KnownMatrix
         return KnownMatrix(model_setup=self.model_setup)
 
+class ParametrizedSkewSymmetricMatrixFactory(ModelFactory):
+    """Factory that creates a parametrized skew-symmetric matrix."""
+
+    def create_model(self, rng_key : jax.random.PRNGKey):
+        from models.parametrized_skew_symmetric_matrix \
+            import ParametrizedSkewSymmetricMatrix
+        return ParametrizedSkewSymmetricMatrix(rng_key=rng_key,
+                                                model_setup=self.model_setup)
+
 class ParametrizedConstantSkewSymmetricMatrixFactory(ModelFactory):
     """Factory that creates a parametrized constant skew-symmetric matrix."""
 
@@ -135,6 +144,15 @@ class ParametrizedPSDMatrix(ModelFactory):
         return ParametrizedPSDMatrix(rng_key=rng_key,
                                         model_setup=self.model_setup)
 
+class ParametrizedConstantPSDMatrix(ModelFactory):
+    """Factory that creates a parametrized constant symmetric positive matrix."""
+
+    def create_model(self, rng_key : jax.random.PRNGKey):
+        from models.parametrized_constant_psd_matrix \
+            import ParametrizedConstantPSDMatrix
+        return ParametrizedConstantPSDMatrix(rng_key=rng_key,
+                                                model_setup=self.model_setup)
+
 model_factories = {
     'node' : NodeFactory,
     'hnode' : HamiltonianNodeFactory,
@@ -146,8 +164,10 @@ model_factories = {
     'parametrized_constant_matrix' : ParametrizedConstantMatrixFactory,
     'parametrized_matrix' : ParametrizedMatrixFactory,
     'known_matrix' : KnownMatrixFactory,
+    'parametrized_skew_symmetric_matrix' : ParametrizedSkewSymmetricMatrixFactory,
     'parametrized_constant_skew_symmetric_matrix' : ParametrizedConstantSkewSymmetricMatrixFactory,
-    'parametrized_psd_matrix' : ParametrizedPSDMatrix
+    'parametrized_psd_matrix' : ParametrizedPSDMatrix,
+    'parametrized_constant_psd_matrix' : ParametrizedConstantPSDMatrix,
 }
 
 def get_model_factory(model_setup):
