@@ -48,7 +48,7 @@ model_setup:
       matrix_shape : [2,2]
       mlp_setup_params:
         model_type : 'mlp'
-        input_dim : 4
+        input_dim : 2
         output_dim: 3
         nn_setup_params:
           output_sizes: [32, 32, 3]
@@ -85,7 +85,7 @@ model_setup:
       matrix_shape : [2,2]
       mlp_setup_params:
         model_type : 'mlp'
-        input_dim : 4
+        input_dim : 2
         output_dim: 3
         nn_setup_params:
           output_sizes: [32, 32, 3]
@@ -109,12 +109,12 @@ model_setup:
 trainer_setup:
   trainer_type : 'compositional_phnode'
   num_subtrainers : 2
-  num_training_steps : 20000
+  num_training_steps : 30000
   loss_setup:
     loss_function_type: 'compositional_phnode_with_control_loss' 
   subtrainer0_setup:
     trainer_type: 'sgd'
-    num_training_steps: 20000
+    num_training_steps: 30000
     minibatch_size: 32
     loss_setup:
       loss_function_type: 'phnode_loss' 
@@ -125,7 +125,7 @@ trainer_setup:
       learning_rate : !!float 1e-3
   subtrainer1_setup:
     trainer_type: 'node_with_control'
-    num_training_steps: 20000
+    num_training_steps: 30000
     minibatch_size: 32
     loss_setup:
       loss_function_type: 'phnode_with_control_loss' 

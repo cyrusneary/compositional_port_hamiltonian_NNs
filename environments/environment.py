@@ -175,8 +175,8 @@ class Environment(object):
         # Append the last control input again to make the trajectory length the same.
         control_inputs.append(control)
 
-        xnextVal = jnp.array(xnextVal)
-        control_inputs = jnp.array(control_inputs)
+        xnextVal = jnp.array(xnextVal[:-1])
+        control_inputs = jnp.array(control_inputs[:-1])
         return xnextVal, tIndexes, control_inputs
 
     def gen_random_trajectory(self,

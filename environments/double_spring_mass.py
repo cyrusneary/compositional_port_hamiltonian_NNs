@@ -15,7 +15,7 @@ from functools import partial
 import jax
 import jax.numpy as jnp
 
-from environment import Environment
+from .environment import Environment
 
 ###### Code to generate a dataset of double-pendulum trajectories ######
 
@@ -137,7 +137,7 @@ class DoubleMassSpring(Environment):
             """
             The system dynamics formulated using Hamiltonian mechanics.
             """ 
-            dh = jax.grad(self.H)(state)
+            dh = jax.grad(H)(state)
 
             if self.state_measure_spring_elongation:
                 J = jnp.array([[0.0, 1.0, 0.0, 0.0],
@@ -167,6 +167,45 @@ class DoubleMassSpring(Environment):
 
             return jnp.matmul(J - R, dh) + jnp.matmul(g, control_input)
 
+        def get_power(x, u):
+            """
+            Get the power of the various components of the port-Hamiltonian system.
+            """
+            dh = jax.grad(H)(x)
+
+            if self.state_measure_spring_elongation:
+                J = jnp.array([[0.0, 1.0, 0.0, 0.0],
+                                [-1.0, 0.0, 1.0, 0.0],
+                                [0.0, -1.0, 0.0, 1.0],
+                                [0.0, 0.0, -1.0, 0.0]])
+            else:
+                J = jnp.array([[0.0, 1.0, 0.0, 0.0],
+                                [-1.0, 0.0, 0.0, 0.0],
+                                [0.0, 0.0, 0.0, 1.0],
+                                [0.0, 0.0, -1.0, 0.0]])
+
+            if self.nonlinear_damping:
+                p1 = x[1]
+                p2 = x[3]
+                damping1 = self.b1 * p1**2 / self.m1**2
+                damping2 = self.b2 * p2**2 / self.m2**2
+            else:
+                damping1 = self.b1
+                damping2 = self.b2
+            R = jnp.array([[0.0, 0.0, 0.0, 0.0],
+                        [0.0, damping1, 0.0, 0.0],
+                        [0.0, 0.0, 0.0, 0.0],
+                        [0.0, 0.0, 0.0, damping2]])
+            g = jnp.array([[0.0, 0.0, 0.0, 1.0]]).transpose()
+
+            J_pow = jnp.matmul(dh.transpose(), jnp.matmul(J, dh))
+            R_pow = jnp.matmul(dh.transpose(), jnp.matmul(- R, dh))
+            g_pow = jnp.matmul(dh.transpose(), jnp.matmul(g, u))
+
+            dh_dt = J_pow + R_pow + g_pow
+
+            return dh_dt, J_pow, R_pow, g_pow
+
         # def dynamics_function(state : jnp.ndarray, 
         #                 t: jnp.float32,
         #                 control_input : jnp.ndarray,
@@ -195,6 +234,7 @@ class DoubleMassSpring(Environment):
         self.KE = jax.jit(KE)
         self.H = jax.jit(H)
         self.dynamics_function = jax.jit(dynamics_function)
+        self.get_power = jax.jit(get_power)
 
     def plot_trajectory(self, trajectory, fontsize=15, linewidth=3):
         """

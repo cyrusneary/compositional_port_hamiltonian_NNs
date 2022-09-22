@@ -237,6 +237,35 @@ class CompositionalPHNODE(NODE):
 
             return integrator(f_fixed_control, x, 0, self.dt)
 
+        def get_model_power(params, x, u):
+            """
+            Compute the power of the system.
+
+            Parameters
+            ----------
+            params : dict
+                The parameters of the model.
+            x : array
+                The state of the system.
+            u : array
+                The control input to the system.
+            """
+            
+            dh = jax.grad(H_net, argnums=1)(params, x)
+            J_val = J_net.forward(params['J_net_params'], x)
+            R_val = R_net(params, x)
+            g_val = g_net(params, x)
+
+            J_pow = jnp.matmul(dh.transpose(), jnp.matmul(J_val, dh))
+            R_pow = jnp.matmul(dh.transpose(), jnp.matmul(- R_val, dh))
+            g_pow = jnp.matmul(dh.transpose(), jnp.matmul(g_val, u))
+
+            dh_dt = J_pow + R_pow + g_pow
+
+            return dh_dt, J_pow, R_pow, g_pow
+        
+        get_model_power = jax.jit(get_model_power)
+
         forward = jax.jit(forward)
         forward = jax.vmap(forward, in_axes=(None, 0, 0))
 
@@ -244,5 +273,6 @@ class CompositionalPHNODE(NODE):
         self.H_net_forward = H_net
         self.R_net_forward = jax.vmap(R_net, in_axes=(None, 0))
         self.g_net_forward = jax.vmap(g_net, in_axes=(None, 0))
+        self.get_model_power = jax.vmap(get_model_power, in_axes=(None, 0, 0))
         self.submodel_list = submodel_list
         self.init_params = init_params

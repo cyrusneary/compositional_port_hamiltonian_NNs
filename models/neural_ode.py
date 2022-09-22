@@ -53,7 +53,8 @@ class NODE(object):
                             params,
                             initial_state : np.ndarray,
                             num_steps : int,
-                            control_policy : callable = None,):
+                            control_policy : callable = None,
+                            rng_key : jax.random.PRNGKey = jax.random.PRNGKey(0),):        
         """
         Predict the system trajectory from an initial state.
         
@@ -74,14 +75,15 @@ class NODE(object):
 
         if self.control_inputs:
             if control_policy is None:
-                control_policy = lambda x, t: jnp.zeros((self.control_dim,))
+                control_policy = lambda x, t, jax_key: jnp.zeros((self.control_dim,))
         else:
-            control_policy = lambda x, t: None
+            control_policy = lambda x, t, jax_key: None
 
         next_state = initial_state.reshape((1, len(initial_state)))
         for step in range(1, num_steps):
             t = times[-1]
-            control_input = jnp.array([control_policy(next_state, t)])
+            rng_key, subkey = jax.random.split(rng_key)
+            control_input = jnp.array([control_policy(next_state, t, subkey)])
             next_state = self.forward(params, next_state, control_input)
             trajectory.append(next_state[0])
             control_inputs.append(control_input[0])

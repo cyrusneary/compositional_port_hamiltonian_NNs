@@ -14,7 +14,7 @@ sacred_save_path = os.path.abspath('../experiments/sacred_runs/')
 # upper bound for each number of trajectories, and a list of the median error
 # for a given number of trajectories.
 
-run_indeces = [683, 685, 686, 687, 688, 689, 690, 691]
+run_indeces = [996, 997, 998, 999, 1000, 1001, 1002, 1003, 1004, 1005]
 
 composite_model_test_loss = []
 submodel_1_train_loss = []
@@ -27,13 +27,13 @@ num_points_to_include = 100
 for i in range(len(run_indeces)):
     results = load_metrics(run_indeces[i], sacred_save_path)
 
-    composite_smoothed_loss = np.array(results['testing.total_loss']['values'])
+    composite_smoothed_loss = np.array(results['testing.normalized_data_loss']['values'])
     composite_smoothed_loss = np.convolve(composite_smoothed_loss, np.ones(N)/N, mode='valid')
 
-    submodel_1_smoothed_loss = np.array(results['training.submodel0.total_loss']['values'])
+    submodel_1_smoothed_loss = np.array(results['training.submodel0.normalized_data_loss']['values'])
     submodel_1_smoothed_loss = np.convolve(submodel_1_smoothed_loss, np.ones(N)/N, mode='valid')
 
-    submodel_2_smoothed_loss = np.array(results['training.submodel1.total_loss']['values'])
+    submodel_2_smoothed_loss = np.array(results['training.submodel1.normalized_data_loss']['values'])
     submodel_2_smoothed_loss = np.convolve(submodel_2_smoothed_loss, np.ones(N)/N, mode='valid')
 
     choice = np.round(np.linspace(1, len(composite_smoothed_loss)-1, num=num_points_to_include)).astype(int)
@@ -63,11 +63,11 @@ training_iterations = np.arange(num_training_iterations)[choice]
 ##################### Now grab from other experiments #####################
 
 # Vanilla NODE
-run_indeces = [620, 621, 622, 623, 624]
+run_indeces = [1006, 1007, 1008, 1009, 1010]
 vanilla_node_test_loss = []
 for i in range(len(run_indeces)):
     results = load_metrics(run_indeces[i], sacred_save_path)
-    vanilla_node_smoothed_loss = np.array(results['testing.total_loss']['values'])
+    vanilla_node_smoothed_loss = np.array(results['testing.normalized_data_loss']['values'])
     vanilla_node_smoothed_loss = np.convolve(vanilla_node_smoothed_loss, np.ones(N)/N, mode='valid')
     choice = np.round(np.linspace(1, len(vanilla_node_smoothed_loss)-1, num=num_points_to_include)).astype(int)
     vanilla_node_test_loss.append(vanilla_node_smoothed_loss[choice])
@@ -77,11 +77,11 @@ vanilla_node_test_loss_50 = np.percentile(np.array(vanilla_node_test_loss), 50, 
 vanilla_node_test_loss_75 = np.percentile(np.array(vanilla_node_test_loss), 75, axis=0)
 
 # Monolithic PHNODE Known J
-run_indeces = [645, 646, 647, 648, 649]
+run_indeces = [962, 963, 964, 965, 966]
 monolithic_phnode_known_j_test_loss = []
 for i in range(len(run_indeces)):
     results = load_metrics(run_indeces[i], sacred_save_path)
-    monolithic_phnode_known_j_smoothed_loss = np.array(results['testing.total_loss']['values'])
+    monolithic_phnode_known_j_smoothed_loss = np.array(results['testing.normalized_data_loss']['values'])
     monolithic_phnode_known_j_smoothed_loss = np.convolve(monolithic_phnode_known_j_smoothed_loss, np.ones(N)/N, mode='valid')
     choice = np.round(np.linspace(1, len(monolithic_phnode_known_j_smoothed_loss)-1, num=num_points_to_include)).astype(int)
     monolithic_phnode_known_j_test_loss.append(monolithic_phnode_known_j_smoothed_loss[choice])
@@ -91,11 +91,11 @@ monolithic_phnode_known_j_test_loss_50 = np.percentile(np.array(monolithic_phnod
 monolithic_phnode_known_j_test_loss_75 = np.percentile(np.array(monolithic_phnode_known_j_test_loss), 75, axis=0)
 
 # Monolithic PHNODE Unknown J
-run_indeces = [670, 671, 672, 673, 674]
+run_indeces = [987, 988, 989, 990, 991]
 monolithic_phnode_unknown_j_test_loss = []
 for i in range(len(run_indeces)):
     results = load_metrics(run_indeces[i], sacred_save_path)
-    monolithic_phnode_unknown_j_smoothed_loss = np.array(results['testing.total_loss']['values'])
+    monolithic_phnode_unknown_j_smoothed_loss = np.array(results['testing.normalized_data_loss']['values'])
     monolithic_phnode_unknown_j_smoothed_loss = np.convolve(monolithic_phnode_unknown_j_smoothed_loss, np.ones(N)/N, mode='valid')
     choice = np.round(np.linspace(1, len(monolithic_phnode_unknown_j_smoothed_loss)-1, num=num_points_to_include)).astype(int)
     monolithic_phnode_unknown_j_test_loss.append(monolithic_phnode_unknown_j_smoothed_loss[choice])
@@ -144,10 +144,10 @@ ax.set_yscale('log')
 ax.legend()
 ax.grid()
 
-# plt.show()
+plt.show()
 
-import tikzplotlib
-tikzplotlib.save("tikz/compositional_phnode_training_losses.tex")
+# import tikzplotlib
+# tikzplotlib.save("tikz/compositional_phnode_training_losses.tex")
 
 # fig = plt.figure()
 # ax = fig.add_subplot(111)

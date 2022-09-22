@@ -16,7 +16,10 @@ from functools import partial
 import jax
 import jax.numpy as jnp
 
-from environment import Environment
+import sys
+sys.path.append('..')
+
+from .environment import Environment
 
 ###### Code to generate a dataset of double-pendulum trajectories ######
 
