@@ -47,8 +47,8 @@ true_dh_dt, true_J_pow, true_R_pow, true_g_pow = \
 
 print('Compted true trajectory and power in {} seconds'.format(time() - t))
 
-submodel1_run_indeces = [739] # [862, 863, 864, 865, 866] # known J 100 trajectories
-submodel2_run_indeces = [795] # [887, 888, 889, 890, 891] # known J 1000 trajectories
+submodel1_run_indeces = [862, 863, 864, 865, 866] # known J 100 trajectories [739] 
+submodel2_run_indeces = [887, 888, 889, 890, 891] # known J 1000 trajectories [795] 
 sacred_save_path = os.path.abspath('../experiments/sacred_runs/')
 
 model_setup = {
@@ -151,29 +151,29 @@ submodel1Color = '#4F359B'
 submodel2Color = '#07742D'
 
 fig = plt.figure(figsize=(7,4))
-ax = fig.add_subplot(311)
+ax = fig.add_subplot(111)
 
 ax.plot(tIndeces[::n], true_dh_dt[::n], color='k', label='True power')
 
 ax.plot(predicted_times[::n], predicted_dh_dt_median[::n], color=composite_model_color, label='Predicted Power')
 ax.fill_between(predicted_times[::n], predicted_dh_dt_lower[::n], predicted_dh_dt_upper[::n], color=composite_model_color, alpha=0.2)
 
-ax.plot(tIndeces[::n], true_J_pow[::n], color='k', label='True J power')
-ax.plot(predicted_times[::n], predicted_J_pow_median[::n], color=composite_model_color, label='Predicted J Power')
-ax.fill_between(predicted_times[::n], predicted_J_pow_lower[::n], predicted_J_pow_upper[::n], color=composite_model_color, alpha=0.2)
+# ax.plot(tIndeces[::n], true_J_pow[::n], color='k', label='True J power')
+# ax.plot(predicted_times[::n], predicted_J_pow_median[::n], color=composite_model_color, label='Predicted J Power')
+# ax.fill_between(predicted_times[::n], predicted_J_pow_lower[::n], predicted_J_pow_upper[::n], color=composite_model_color, alpha=0.2)
 
-ax.grid()
+# ax.grid()
 
-ax = fig.add_subplot(312)
-ax.plot(tIndeces[::n], true_R_pow[::n], color='k', label='True R power')
-ax.plot(predicted_times[::n], predicted_R_pow_median[::n], color=composite_model_color, label='Predicted R Power')
-ax.fill_between(predicted_times[::n], predicted_R_pow_lower[::n], predicted_R_pow_upper[::n], color=composite_model_color, alpha=0.2)
-ax.grid()
+# ax = fig.add_subplot(312)
+# ax.plot(tIndeces[::n], true_R_pow[::n], color='k', label='True R power')
+# ax.plot(predicted_times[::n], predicted_R_pow_median[::n], color=composite_model_color, label='Predicted R Power')
+# ax.fill_between(predicted_times[::n], predicted_R_pow_lower[::n], predicted_R_pow_upper[::n], color=composite_model_color, alpha=0.2)
+# ax.grid()
 
-ax = fig.add_subplot(313)
-ax.plot(tIndeces[::n], true_g_pow[::n], color='k', label='True g power')
-ax.plot(predicted_times[::n], predicted_g_pow_median[::n], color=composite_model_color, label='Predicted g Power')
-ax.fill_between(predicted_times[::n], predicted_g_pow_lower[::n], predicted_g_pow_upper[::n], color=composite_model_color, alpha=0.2)
+# ax = fig.add_subplot(313)
+# ax.plot(tIndeces[::n], true_g_pow[::n], color='k', label='True g power')
+# ax.plot(predicted_times[::n], predicted_g_pow_median[::n], color=composite_model_color, label='Predicted g Power')
+# ax.fill_between(predicted_times[::n], predicted_g_pow_lower[::n], predicted_g_pow_upper[::n], color=composite_model_color, alpha=0.2)
 
 # ax.plot(predicted_times[::n], predicted_median[::n, 0], color=submodel1Color, linestyle='solid', linewidth=2, label='q1')
 # ax.fill_between(predicted_times[::n], predicted_lower[::n, 0], predicted_upper[::n, 0], color=submodel1Color, alpha=0.2)
@@ -193,11 +193,12 @@ ax.fill_between(predicted_times[::n], predicted_g_pow_lower[::n], predicted_g_po
 # ax.plot(predicted_times[::n], predicted_median[::n, 3], color=submodel2Color, linestyle='dashed', linewidth=2, label='p2')
 # ax.fill_between(predicted_times[::n], predicted_lower[::n, 3], predicted_upper[::n, 3], color=submodel2Color, alpha=0.2)
 
+ax.set_ylabel(r'\frac{dH}{dt}', fontsize=16)
 ax.set_xlabel('Time $[s]$', fontsize=16)
 ax.grid()
 ax.legend()
 
-plt.show()
+# plt.show()
 
-# import tikzplotlib
-# tikzplotlib.save("compositional_phnode_predicted_power.tex")
+import tikzplotlib
+tikzplotlib.save("compositional_phnode_predicted_power.tex")
