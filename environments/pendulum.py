@@ -74,17 +74,23 @@ class PendulumEnv(Environment):
             'name' : name,
         }
 
-    #@partial(jax.jit, static_argnums=(0,))
-    def dynamics_function(self, 
-                        state : jnp.ndarray, 
-                        t: jnp.ndarray=None,
-                        ) -> jnp.ndarray:
-        """ 
-        Pendulum dynamics full known dynamics
+    def _define_dynamics(self):
         """
-        theta, theta_dot = state
-        theta_dot_dot = - self._g / self._l * jnp.sin(theta)
-        return jnp.stack([theta_dot, theta_dot_dot])
+        Define the system dynamics.
+        """
+        def dynamics_function(state : jnp.ndarray, 
+                                t : jnp.float32, 
+                                control_input : jnp.ndarray = jnp.array([0.0]),
+                                jax_key : jax.random.PRNGKey = None, 
+                                ) -> jnp.ndarray:
+            """ 
+            Pendulum dynamics full known dynamics
+            """
+            theta, theta_dot = state
+            theta_dot_dot = - self._g / self._l * jnp.sin(theta)
+            return jnp.stack([theta_dot, theta_dot_dot])
+            
+        self.dynamics_function = jax.jit(dynamics_function)
 
     def plot_trajectory(self, trajectory, fontsize=15, linewidth=3):
         """
@@ -173,7 +179,7 @@ class PendulumEnv(Environment):
         )
 
 def main():
-    env = PendulumEnv(dt=0.01, random_seed=24, name='pendulum')
+    env = PendulumEnv(dt=0.1, random_seed=24, name='pendulum')
 
     # state = jnp.array([np.pi/2, 0.0])
     # img = env.render_state(state)
@@ -194,8 +200,8 @@ def main():
                                 save_pixel_observations=True,
                                 im_shape=(28,28),
                                 grayscale=True)
-    # traj = dataset['state_trajectories'][0, :, :]
-    # env.plot_trajectory(traj)
+    traj = dataset['state_trajectories'][0, :, :]
+    env.plot_trajectory(traj)
 
     # fig = plt.figure()
     # ax = fig.add_subplot(111)

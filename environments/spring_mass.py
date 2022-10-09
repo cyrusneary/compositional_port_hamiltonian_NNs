@@ -19,7 +19,7 @@ import jax.numpy as jnp
 import sys
 sys.path.append('..')
 
-from .environment import Environment
+from environment import Environment
 
 ###### Code to generate a dataset of double-pendulum trajectories ######
 
@@ -49,6 +49,7 @@ class MassSpring(Environment):
                 b : jnp.float32 = 0.0,
                 x0 : jnp.float32 = 1,
                 nonlinear_damping : bool = False,
+                nonlinear_spring : bool = False,
                 name : str = 'spring_mass'
                 ):
         """
@@ -58,6 +59,7 @@ class MassSpring(Environment):
         self.k = k
         self.b = b
         self.nonlinear_damping = nonlinear_damping
+        self.nonlinear_spring = nonlinear_spring
 
         super().__init__(dt=dt, random_seed=random_seed, name=name)
 
@@ -65,6 +67,7 @@ class MassSpring(Environment):
         self.config['k'] = k
         self.config['b'] = b
         self.config['nonlinear_damping'] = nonlinear_damping
+        self.config['nonlinear_spring'] = nonlinear_spring
 
     def _define_dynamics(self):
 
@@ -73,7 +76,10 @@ class MassSpring(Environment):
             The system's potential energy.
             """
             q, p = state
-            return 1/2 * self.k * q**2
+            if self.nonlinear_spring:
+                return jnp.cosh(q) - 1
+            else:
+                return 1/2 * self.k * q**2
         
         def KE(state):
             """
@@ -237,10 +243,11 @@ class MassSpring(Environment):
 def main():
     env = MassSpring(dt=0.01, 
                     m=1.0, 
-                    k=1.5, 
-                    b=1.5, 
+                    k=1.0,#k=1.5, 
+                    b=1.5,#b=1.5, 
                     random_seed=32, 
-                    nonlinear_damping=True)
+                    nonlinear_damping=True,
+                    nonlinear_spring=False,)
 
     def control_policy(state, t, jax_key):
         # q, p = state
@@ -251,7 +258,8 @@ def main():
         # return jnp.array([action])
 
         # return 5.0 * jax.random.uniform(jax_key, shape=(1,), minval = -1.0, maxval=1.0)
-        return jnp.array([jnp.sin(t)])
+        # return jnp.array([jnp.sin(t)])
+        return jnp.array([0.0])
 
     env.set_control_policy(control_policy)
 
@@ -259,8 +267,8 @@ def main():
     save_dir = os.path.abspath(os.path.join(curdir, 'double_mass_spring_submodel_data'))
     t = time.time()
     print('starting simulation')
-    dataset = env.gen_dataset(trajectory_num_steps=500, # 500
-                                num_trajectories=200, # 200 for training, 20 for testing
+    dataset = env.gen_dataset(trajectory_num_steps=1000, # 500
+                                num_trajectories=20, # 200 for training, 20 for testing
                                 x0_init_lb=jnp.array([-1.0, -1.0]),
                                 x0_init_ub=jnp.array([1.0, 1.0]),
                                 save_str=save_dir,)

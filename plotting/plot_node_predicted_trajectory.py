@@ -23,7 +23,7 @@ results = load_metrics(sacred_run_index, sacred_save_path)
 
 test_dataset = datasets['test_dataset']
 
-def control_policy(state, t):
+def control_policy(state, t, jax_key):
     return jnp.array([jnp.sin(t)])
 
 traj_len = 500

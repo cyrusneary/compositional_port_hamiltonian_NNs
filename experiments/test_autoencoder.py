@@ -43,16 +43,18 @@ model = MlpAutoencoder(rng_key=jax.random.PRNGKey(seed),
                         decoder_setup_params=model_setup['decoder_setup_params'],
                         model_name=model_setup['model_type'])
 
-trainer = SGDTrainer(forward=model.forward,
+trainer = SGDTrainer(model=model,
                     init_params=model.init_params,
                     trainer_setup=trainer_setup)
 
 trainer.train(train_dataset, test_dataset, jax.random.PRNGKey(seed))
 
+print(trainer.results.keys())
+
 fig = plt.figure()
 ax = plt.subplot(111)
-ax.plot(trainer.results['training.loss']['values'], label='train_loss')
-ax.plot(trainer.results['testing.loss']['values'], label='test_loss')
+ax.plot(trainer.results['training.total_loss']['values'], label='train_loss')
+ax.plot(trainer.results['testing.total_loss']['values'], label='test_loss')
 ax.set_yscale('log')
 plt.show()
 

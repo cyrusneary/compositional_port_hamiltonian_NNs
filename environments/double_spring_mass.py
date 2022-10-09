@@ -66,6 +66,7 @@ class DoubleMassSpring(Environment):
                 b2 : jnp.float32 = 0.0,
                 state_measure_spring_elongation : bool =True,
                 nonlinear_damping : bool = False,
+                nonlinear_spring : bool = False,
                 name : str = 'Double_Spring_Mass'
                 ):
         """
@@ -86,6 +87,7 @@ class DoubleMassSpring(Environment):
 
         self.state_measure_spring_elongation = state_measure_spring_elongation
         self.nonlinear_damping = nonlinear_damping
+        self.nonlinear_spring = nonlinear_spring
 
         self.config = {
             'dt' : dt,
@@ -99,6 +101,7 @@ class DoubleMassSpring(Environment):
             'b2' : b2,
             'state_measure_spring_elongation' : state_measure_spring_elongation,
             'nonlinear_damping' : nonlinear_damping,
+            'nonlinear_spring' : nonlinear_spring,
             'name' : name,
         }
 
@@ -111,9 +114,15 @@ class DoubleMassSpring(Environment):
             q1 = state[0]
             q2 = state[2]
             if self.state_measure_spring_elongation:
-                return 1/2 * self.k1 * q1**2 + 1/2 * self.k2 * q2**2
+                if self.nonlinear_spring:
+                    return (jnp.cosh(q1) - 1) + (jnp.cosh(q2) - 1)
+                else:
+                    return 1/2 * self.k1 * q1**2 + 1/2 * self.k2 * q2**2
             else:
-                return 1/2 * self.k1 * (q1 - self.y1)**2 + 1/2 * self.k2 * ((q2 - q1) - self.y2)**2
+                if self.nonlinear_spring:
+                    return (jnp.cosh(q1 - self.y1) - 1) + (jnp.cosh((q2 - q1) - self.y2) - 1)
+                else:
+                    return 1/2 * self.k1 * (q1 - self.y1)**2 + 1/2 * self.k2 * ((q2 - q1) - self.y2)**2
 
         def KE(state):
             """
@@ -306,7 +315,8 @@ def main():
                             b2=1.5,
                             random_seed=501, 
                             state_measure_spring_elongation=True,
-                            nonlinear_damping=True,)
+                            nonlinear_damping=True,
+                            nonlinear_spring=False)
 
     def control_policy(state, t, jax_key):
         # return 5.0 * jax.random.uniform(jax_key, shape=(1,), minval = -1.0, maxval=1.0)
