@@ -1,0 +1,56 @@
+experiment_name: 'conv_autoencoder_mnist'
+dataset_setup : 
+  dataset_type : 'mnist'
+  dataset_file_name : 'mnist'
+  train_test_split_percentage : 0.8
+model_setup:
+  model_type: 'autoencoder_conv'
+  input_dim: 64
+  latent_dim : 12
+  output_dim: 64
+  encoder_setup_params:
+    model_type: 'conv_nn'
+    nn_setup_params:
+      layers: 
+        layer0 : 
+          type: 'conv2d'
+          in_channels: 1
+          out_channels: 12
+          kernel_size: 4
+          stride: 1
+          padding: 1
+          activation: 'relu'
+        layer1 :
+          type: 'conv2d'
+          in_channels: 12
+          out_channels: 24
+          kernel_size: 4
+          stride: 1
+          padding: 1
+          activation: 'relu'
+        layer2 :
+          type: 'conv2d'
+          in_channels: 24
+          out_channels: 12
+          kernel_size: 4
+          stride: 1
+          padding: 1
+          activation: 'relu'
+        layer3 :
+          type : 'linear'
+          output_size : 12
+          activation : 'relu'
+  decoder_setup_params:
+    output_sizes: [200, 200, 200, 64]
+    activation: 'leaky_relu'
+    residual_connections : False
+trainer_setup:
+  trainer_type: 'sgd'
+  num_training_steps: 50000
+  minibatch_size: 32
+  loss_setup:
+    loss_function_type: 'l2_loss'
+    pen_l2_nn_params: 0.0 # !!float 1e-8 # 0.0
+  optimizer_setup:
+    name: 'adam'
+    learning_rate : !!float 1e-4

@@ -11,12 +11,14 @@ import yaml
 
 import matplotlib.pyplot as plt
 from models.mlp_autoencoder import MlpAutoencoder
+from helpers.model_factories import get_model_factory
 from trainers.sgd_trainer import SGDTrainer
 
 seed = 10
+rng_key = jax.random.PRNGKey(seed)
 
 # Read the config file
-with open('configurations/train_mnist_autoencoder.yml', 'r') as f:
+with open('configurations/train_mnist_conv_autoencoder.yml', 'r') as f:
     config = yaml.safe_load(f)
 
 model_setup = config['model_setup']
@@ -35,13 +37,11 @@ test_dataset = jnp.array(test_dataset / 255.0)
 train_dataset = {'inputs': train_dataset, 'outputs': train_dataset}
 test_dataset = {'inputs': test_dataset, 'outputs': test_dataset}
 
-model = MlpAutoencoder(rng_key=jax.random.PRNGKey(seed), 
-                        input_dim=model_setup['input_dim'],
-                        latent_dim=model_setup['latent_dim'],
-                        output_dim=model_setup['output_dim'],
-                        encoder_setup_params=model_setup['encoder_setup_params'],
-                        decoder_setup_params=model_setup['decoder_setup_params'],
-                        model_name=model_setup['model_type'])
+# Initialize the model to be trained.
+from helpers.model_factories import get_model_factory
+rng_key, subkey = jax.random.split(rng_key)
+model_factory = get_model_factory(model_setup)
+model =  model_factory.create_model(subkey)
 
 trainer = SGDTrainer(model=model,
                     init_params=model.init_params,
@@ -68,4 +68,3 @@ ax.imshow(true_im, cmap='gray')
 ax = plt.subplot(122)
 ax.imshow(reconstructed_im.reshape((8, 8)), cmap='gray')
 plt.show()
-

@@ -64,13 +64,26 @@ class CompositionalPortHamiltonianNodeFactory(ModelFactory):
         return CompositionalPHNODE(rng_key=rng_key,
                         model_setup=self.model_setup)
 
-class AutoencoderFactory(ModelFactory):
+class MLPAutoencoderFactory(ModelFactory):
     """Factory that creates an autoencoder."""
 
     def create_model(self, rng_key : jax.random.PRNGKey):
         """Instantiate an autoencoder."""
         from models.mlp_autoencoder import MlpAutoencoder
         return MlpAutoencoder(rng_key=rng_key,
+                                input_dim=self.model_setup['input_dim'],
+                                latent_dim=self.model_setup['latent_dim'],
+                                output_dim=self.model_setup['input_dim'],
+                                encoder_setup_params=self.model_setup['encoder_setup_params'],
+                                decoder_setup_params=self.model_setup['decoder_setup_params'])
+
+class ConvAutoencoderFactory(ModelFactory):
+    """Factory that creates a convolutional autoencoder."""
+
+    def create_model(self, rng_key : jax.random.PRNGKey):
+        """Instantiate a convolutional autoencoder."""
+        from models.conv_autoencoder import ConvAutoencoder
+        return ConvAutoencoder(rng_key=rng_key,
                                 input_dim=self.model_setup['input_dim'],
                                 latent_dim=self.model_setup['latent_dim'],
                                 output_dim=self.model_setup['input_dim'],
@@ -158,7 +171,8 @@ model_factories = {
     'hnode' : HamiltonianNodeFactory,
     'mlp' : MlpFactory,
     'compositional_phnode' : CompositionalPortHamiltonianNodeFactory,
-    'autoencoder_mlp' : AutoencoderFactory,
+    'autoencoder_mlp' : MLPAutoencoderFactory,
+    'autoencoder_conv' : ConvAutoencoderFactory,
     'autoencoder_node' : AutoencoderNodeFactory,
     'phnode' : PortHamiltonianNodeFactory,
     'parametrized_constant_matrix' : ParametrizedConstantMatrixFactory,
