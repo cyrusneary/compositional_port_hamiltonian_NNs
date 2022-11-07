@@ -38,6 +38,8 @@ class ConvNN(object):
         self.model_setup = model_setup
         self.nn_setup_params = model_setup['nn_setup_params']
 
+        self.input_dim = model_setup['input_dim']
+
         # Initialize the neural network ode.
         self._build_model()
         self.params_shapes, self.count, self.params_tree_struct = \
@@ -53,19 +55,25 @@ class ConvNN(object):
         def conv_nn_forward(x):
             for i in range(len(nn_setup_params['layers'].keys())):
                 layer = nn_setup_params['layers']['layer{}'.format(i)]
-                nonlinearity = choose_nonlinearity(layer['activation'])
                 
-                hk.Conv2D(
-                    output_channels=layer['out_channels'],
-                    kernel_shape=(layer['kernel_size'], layer['kernel_size'])
-                )(x)
+                if layer['type'] == 'conv2d':
+                    x = hk.Conv2D(
+                            output_channels=layer['output_channels'],
+                            kernel_shape=(layer['kernel_size'], layer['kernel_size'])
+                        )(x)
+                elif layer['type'] == 'linear':
+                    x = hk.Linear(
+                            output_size=layer['output_size']
+                        )(x)
 
-                print(layer)
+                nonlinearity = choose_nonlinearity(layer['activation'])
+                x = nonlinearity(x)
+            return x
 
         conv_nn_forward_pure = hk.without_apply_rng(hk.transform(conv_nn_forward))
 
         self.rng_key, subkey = jax.random.split(self.rng_key)
-        init_params = conv_nn_forward_pure.init(rng=subkey, x=jnp.zeros((self.input_dim,)))
+        init_params = conv_nn_forward_pure.init(rng=subkey, x=jnp.zeros(self.input_dim))
 
         def forward(params, x):
             out = conv_nn_forward_pure.apply(params=params, x=x)

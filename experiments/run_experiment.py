@@ -30,13 +30,13 @@ def config():
 #     # ex.add_config('configurations/train_autoencoder_mlp_pendulum.yml')
     # ex.add_config('configurations/train_autoencoder_node_pendulum.yml')
     ex.add_config('configurations/train_mnist_conv_autoencoder.yml')
-#     # ex.add_config('configurations/train_neural_ode_damped_spring_mass.yml')
+    # ex.add_config('configurations/train_neural_ode_damped_spring_mass.yml')
     # ex.add_config('configurations/train_phnode_damped_spring_mass.yml')
 #     # ex.add_config('configurations/train_phnode_nonlinear_damped_spring_mass.yml')
 #     # ex.add_config('configurations/train_phnode_known_damping_spring_mass.yml')
 #     # ex.add_config('configurations/train_neural_ode_nonlinear_damped_control_spring_mass.yml')
 #     # ex.add_config('configurations/train_phnode_nonlindear_damped_control_spring_mass.yml')
-#     # ex.add_config('configurations/train_neural_ode_nonlinear_damped_control_double_mass_spring.yml')
+    # ex.add_config('configurations/train_neural_ode_nonlinear_damped_control_double_mass_spring.yml')
 
     # Double spring mass example
     # ex.add_config('configurations/double_spring_mass/train_compositional_phnode_double_spring_mass.yml')

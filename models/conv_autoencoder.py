@@ -5,6 +5,9 @@ import haiku as hk
 
 from .common import get_params_struct, get_flat_params, unflatten_params, choose_nonlinearity
 
+import os
+os.environ["XLA_FLAGS"] = "--xla_gpu_cuda_data_dir=/opt/cuda"
+
 class ConvAutoencoder(object):
 
     def __init__(self,
@@ -75,26 +78,34 @@ class ConvAutoencoder(object):
             A function to update the parameters of the neural ODE.
         """
         encoder_setup_params = self.encoder_setup_params.copy()
-        nonlinearity = choose_nonlinearity(encoder_setup_params['activation'])
+        nn_setup_params = encoder_setup_params['nn_setup_params'].copy()
+
+        os.environ["XLA_FLAGS"] = "--xla_gpu_cuda_data_dir=/opt/cuda"
 
         # Build the encoder network.
         def encoder_network(x):
-            for output_ind in range(len(encoder_setup_params['output_sizes'])):
-                if output_ind == 0 \
-                    or output_ind == len(encoder_setup_params['output_sizes']) - 1\
-                        or not encoder_setup_params['residual_connections']:
-                    x = hk.Linear(encoder_setup_params['output_sizes'][output_ind])(x)
-                else: # add residual connections
-                    x = x + hk.Linear(encoder_setup_params['output_sizes'][output_ind])(x)
-                if output_ind < len(encoder_setup_params['output_sizes']) - 1:
-                    x = nonlinearity(x)
+            for i in range(len(nn_setup_params['layers'].keys())):
+                layer = nn_setup_params['layers']['layer{}'.format(i)]
+                
+                if layer['type'] == 'conv2d':
+                    x = hk.Conv2D(
+                            output_channels=layer['output_channels'],
+                            kernel_shape=(layer['kernel_size'], layer['kernel_size'])
+                        )(x)
+                elif layer['type'] == 'linear':
+                    x = hk.Linear(
+                            output_size=layer['output_size']
+                        )(x)
+
+                nonlinearity = choose_nonlinearity(layer['activation'])
+                x = nonlinearity(x)
             return x
 
         encoder_network_pure = hk.without_apply_rng(hk.transform(encoder_network))
 
         self.rng_key, subkey = jax.random.split(self.rng_key)
         init_encoder_params = encoder_network_pure.init(
-                                    rng=subkey, x=jnp.zeros((self.input_dim,))
+                                    rng=subkey, x=jnp.zeros(self.input_dim)
                                 )
 
         def encode(params, x):
@@ -102,22 +113,27 @@ class ConvAutoencoder(object):
 
         encode = jax.jit(encode)
 
+        # Now setup the decoder network.
         decoder_setup_params = self.decoder_setup_params.copy()
-        nonlinearity = choose_nonlinearity(decoder_setup_params['activation'])
+        nn_setup_params = decoder_setup_params['nn_setup_params'].copy()
 
         # Build the decoder network.
         def decoder_network(x):
-            # return hk.nets.MLP(**decoder_setup_params)(x)
-            for output_ind in range(len(decoder_setup_params['output_sizes'])):
-                if output_ind == 0 \
-                    or output_ind == len(decoder_setup_params['output_sizes']) - 1 \
-                        or not decoder_setup_params['residual_connections']:
-                    x = hk.Linear(decoder_setup_params['output_sizes'][output_ind])(x)
-                else: # add residual connections
-                    x = x + hk.Linear(decoder_setup_params['output_sizes'][output_ind])(x)
+            for i in range(len(nn_setup_params['layers'].keys())):
+                layer = nn_setup_params['layers']['layer{}'.format(i)]
+                
+                if layer['type'] == 'conv2d_transpose':
+                    x = hk.Conv2DTranspose(
+                            output_channels=layer['output_channels'],
+                            kernel_shape=(layer['kernel_size'], layer['kernel_size'])
+                        )(x)
+                elif layer['type'] == 'linear':
+                    x = hk.Linear(
+                            output_size=layer['output_size']
+                        )(x)
 
-                if output_ind < len(decoder_setup_params['output_sizes']) - 1:
-                    x = nonlinearity(x)
+                nonlinearity = choose_nonlinearity(layer['activation'])
+                x = nonlinearity(x)
             return x
 
         decoder_network_pure = hk.without_apply_rng(hk.transform(decoder_network))
