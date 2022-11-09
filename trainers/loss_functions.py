@@ -117,9 +117,12 @@ def phnode_loss_constructor(model, loss_function_setup):
             sum(jnp.sum(jnp.square(p)) 
                 for p in jax.tree_util.tree_leaves(params['H_net_params']))
         
-        R_net_out = model.R_net_forward(params, x).flatten()
-        dissipation_regularization_loss = pen_l1_dissipation_params * \
-            jnp.linalg.norm(R_net_out, ord=1) / num_datapoints
+        if 'R_net_setup' in model.model_setup:
+            R_net_out = model.R_net_forward(params, x).flatten()
+            dissipation_regularization_loss = pen_l1_dissipation_params * \
+                jnp.linalg.norm(R_net_out, ord=1) / num_datapoints
+        else:
+            dissipation_regularization_loss = 0.0
 
         if 'J_net_setup' in model.model_setup:
             J_net_out = model.J_net_forward(params, x).flatten()

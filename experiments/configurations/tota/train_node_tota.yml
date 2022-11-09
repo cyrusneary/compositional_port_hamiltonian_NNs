@@ -1,0 +1,34 @@
+experiment_name : 'Vanilla NODE tota system'
+dataset_setup : 
+  dataset_type : 'trajectory'
+  train_dataset_file_name : 'tota_training_2022-11-08-18-18-14.pkl'
+  test_dataset_file_name : 'tota_testing_2022-11-08-18-20-40.pkl'
+  dataset_path : '../environments/tota_data'
+  num_training_trajectories : 200
+  num_testing_trajectories : 20
+model_setup:
+  model_type : 'node'
+  input_dim : 4 
+  output_dim: 4
+  dt : 0.01
+  integrator : 'rk4'
+  control_inputs : False
+  state_dim : 4
+  control_dim : 0
+  network_setup:
+    model_type : 'mlp'
+    input_dim : 4
+    output_dim: 4
+    nn_setup_params:
+        output_sizes: [32, 32, 4]
+        activation: 'tanh'
+trainer_setup:
+  trainer_type: 'sgd'
+  num_training_steps: 20000
+  minibatch_size: 32
+  loss_setup:
+    loss_function_type: 'l2_loss' 
+    pen_l2_nn_params: 0.0
+  optimizer_setup:
+    name: 'adam'
+    learning_rate : !!float 1e-3

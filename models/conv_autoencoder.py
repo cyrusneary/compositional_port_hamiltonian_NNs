@@ -78,29 +78,31 @@ class ConvAutoencoder(object):
             A function to update the parameters of the neural ODE.
         """
         encoder_setup_params = self.encoder_setup_params.copy()
-        nn_setup_params = encoder_setup_params['nn_setup_params'].copy()
+        encoder_nn_setup_params = encoder_setup_params['nn_setup_params'].copy()
 
-        os.environ["XLA_FLAGS"] = "--xla_gpu_cuda_data_dir=/opt/cuda"
-
+        encoder_layer_shapes = []
         # Build the encoder network.
         def encoder_network(x):
-            for i in range(len(nn_setup_params['layers'].keys())):
-                layer = nn_setup_params['layers']['layer{}'.format(i)]
+            for i in range(len(encoder_nn_setup_params['layers'].keys())):
+                layer = encoder_nn_setup_params['layers']['layer{}'.format(i)]
                 
                 if layer['type'] == 'conv2d':
                     x = hk.Conv2D(
                             output_channels=layer['output_channels'],
                             kernel_shape=(layer['kernel_size'], layer['kernel_size'])
                         )(x)
+                    
                 elif layer['type'] == 'linear':
                     x = hk.Linear(
                             output_size=layer['output_size']
-                        )(x)
+                        )(x.flatten())
 
                 nonlinearity = choose_nonlinearity(layer['activation'])
                 x = nonlinearity(x)
+                encoder_layer_shapes.append(x.shape)
             return x
 
+        self.encoder_layer_shapes = encoder_layer_shapes
         encoder_network_pure = hk.without_apply_rng(hk.transform(encoder_network))
 
         self.rng_key, subkey = jax.random.split(self.rng_key)
@@ -115,12 +117,13 @@ class ConvAutoencoder(object):
 
         # Now setup the decoder network.
         decoder_setup_params = self.decoder_setup_params.copy()
-        nn_setup_params = decoder_setup_params['nn_setup_params'].copy()
+        decoder_nn_setup_params = decoder_setup_params['nn_setup_params'].copy()
 
+        decoder_layer_shapes = []
         # Build the decoder network.
         def decoder_network(x):
-            for i in range(len(nn_setup_params['layers'].keys())):
-                layer = nn_setup_params['layers']['layer{}'.format(i)]
+            for i in range(len(decoder_nn_setup_params['layers'].keys())):
+                layer = decoder_nn_setup_params['layers']['layer{}'.format(i)]
                 
                 if layer['type'] == 'conv2d_transpose':
                     x = hk.Conv2DTranspose(
@@ -131,16 +134,19 @@ class ConvAutoencoder(object):
                     x = hk.Linear(
                             output_size=layer['output_size']
                         )(x)
+                    x = x.reshape(encoder_layer_shapes[-2])
 
                 nonlinearity = choose_nonlinearity(layer['activation'])
                 x = nonlinearity(x)
+                decoder_layer_shapes.append(x.shape)
             return x
 
+        self.decoder_layer_shapes = decoder_layer_shapes
         decoder_network_pure = hk.without_apply_rng(hk.transform(decoder_network))
 
         self.rng_key, subkey = jax.random.split(self.rng_key)
         init_decoder_params = decoder_network_pure.init(
-                                    rng=subkey, x=jnp.zeros((self.latent_dim,))
+                                    rng=subkey, x=jnp.zeros(encoder_layer_shapes[-1])
                                 )   
 
         def decode(params, x):
@@ -155,6 +161,7 @@ class ConvAutoencoder(object):
             return decode(decoder_params, z)
 
         forward = jax.jit(forward)
+        forward = jax.vmap(forward, in_axes=(None, 0))
 
         self.forward = forward
         self.encode = encode

@@ -26,10 +26,10 @@ def config():
 #     # ex.add_config('configurations/train_hnode_spring_mass.yml')
 #     # ex.add_config('configurations/train_neural_ode_double_spring_mass.yml')
 #     # ex.add_config('configurations/train_hnode_double_spring_mass.yml')
-#     # ex.add_config('configurations/train_phnode_double_spring_mass.yml')
+    # ex.add_config('configurations/train_phnode_double_spring_mass.yml')
 #     # ex.add_config('configurations/train_autoencoder_mlp_pendulum.yml')
     # ex.add_config('configurations/train_autoencoder_node_pendulum.yml')
-    ex.add_config('configurations/train_mnist_conv_autoencoder.yml')
+    # ex.add_config('configurations/train_mnist_conv_autoencoder.yml')
     # ex.add_config('configurations/train_neural_ode_damped_spring_mass.yml')
     # ex.add_config('configurations/train_phnode_damped_spring_mass.yml')
 #     # ex.add_config('configurations/train_phnode_nonlinear_damped_spring_mass.yml')
@@ -47,6 +47,10 @@ def config():
     # ex.add_config('configurations/double_spring_mass/train_phnode_submodel2.yml')
     # ex.add_config('configurations/double_spring_mass/train_phnode_submodel1_unknown_J.yml')
     # ex.add_config('configurations/double_spring_mass/train_phnode_submodel2_unknown_J.yml')
+
+    # TOTA experiments
+    ex.add_config('configurations/tota/train_phnode_tota.yml')
+    # ex.add_config('configurations/tota/train_node_tota.yml')
 
 @ex.automain
 def experiment_main(

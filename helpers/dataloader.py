@@ -105,6 +105,7 @@ class MNISTDataLoader(DataLoader):
             train_test_split_percentage = 0.8
 
         num_total_points = len(digits.data)
+        digits.data = digits.data.reshape((num_total_points, 8, 8, 1))
         num_train_points = int(num_total_points * train_test_split_percentage)
 
         train_dataset = digits.data[:num_train_points]

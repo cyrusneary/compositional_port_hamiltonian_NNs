@@ -44,25 +44,25 @@ model_setup:
       layers: 
         layer0 :
           type : 'linear'
-          output_size : 12 # Should be the same as the last hidden dim of the encoder.
+          output_size : 768 # Should be the same as the last hidden dim of the encoder.
           activation : 'relu'
         layer1 : 
-          type: 'conv2d_transpose'
-          output_channels: 12
-          kernel_size: 4
-          stride: 1
-          padding: 1
-          activation: 'relu'
-        layer2 :
           type: 'conv2d_transpose'
           output_channels: 24
           kernel_size: 4
           stride: 1
           padding: 1
           activation: 'relu'
-        layer3 :
+        layer2 :
           type: 'conv2d_transpose'
           output_channels: 12
+          kernel_size: 4
+          stride: 1
+          padding: 1
+          activation: 'relu'
+        layer3 :
+          type: 'conv2d_transpose'
+          output_channels: 1
           kernel_size: 4
           stride: 1
           padding: 1
