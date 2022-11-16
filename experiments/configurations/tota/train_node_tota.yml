@@ -21,10 +21,10 @@ model_setup:
     output_dim: 4
     nn_setup_params:
         output_sizes: [32, 32, 4]
-        activation: 'tanh'
+        activation: 'relu'
 trainer_setup:
   trainer_type: 'sgd'
-  num_training_steps: 20000
+  num_training_steps: 100000
   minibatch_size: 32
   loss_setup:
     loss_function_type: 'l2_loss' 

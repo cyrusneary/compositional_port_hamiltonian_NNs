@@ -45,6 +45,9 @@ class TOTA(Environment):
         The acceleration due to gravity [m/s^2].
     m2 :
         The mass of the pendulum bob [kg].
+    state_angle_transform : 
+        A boolean flag. If true, the angle of the pendulum is reported as sin(theta), cos(theta).
+        If false, the angle of the pendulum is reported as theta.
     """
 
     def __init__(self, 
@@ -55,6 +58,7 @@ class TOTA(Environment):
                 l : jnp.float32 = 1,
                 g : jnp.float32 = 9.81,
                 m2 : jnp.float32 = 1,
+                state_angle_transform : bool = True,
                 name : str = 'tota'
                 ):
         """
@@ -65,6 +69,7 @@ class TOTA(Environment):
         self.l = l
         self.g = g
         self.m2 = m2
+        self.state_angle_transform = state_angle_transform
 
         super().__init__(dt=dt, random_seed=random_seed, name=name)
 
@@ -73,6 +78,7 @@ class TOTA(Environment):
         self.config['l'] = l
         self.config['g'] = g
         self.config['m2'] = m2
+        self.config['state_angle_transform'] = state_angle_transform
 
     def _define_dynamics(self):
 
@@ -80,16 +86,25 @@ class TOTA(Environment):
             """
             The system's potential energy.
             """
-            q, theta, q_dot, theta_dot = state
-            return 1/2 * self.k * q**2 - self.m2 * self.g * self.l * jnp.cos(theta)
+            if not self.state_angle_transform:
+                q, theta, q_dot, theta_dot = state
+                return 1/2 * self.k * q**2 - self.m2 * self.g * self.l * jnp.cos(theta)
+            else:
+                q, sin_theta, cos_theta, q_dot, theta_dot = state
+                return 1/2 * self.k * q**2 - self.m2 * self.g * self.l * cos_theta
 
         def KE(state):
             """
             The system's kinetic energy.
             """
-            q, theta, q_dot, theta_dot = state
-            return 1/2 * self.m1 * q_dot**2 + \
-                1/2 * self.m2 * (q_dot**2 + self.l**2 * theta_dot**2 + 2 * q_dot * self.l * theta_dot * jnp.cos(theta))
+            if not self.state_angle_transform:
+                q, theta, q_dot, theta_dot = state
+                return 1/2 * self.m1 * q_dot**2 + \
+                    1/2 * self.m2 * (q_dot**2 + self.l**2 * theta_dot**2 + 2 * q_dot * self.l * theta_dot * jnp.cos(theta))
+            else:
+                q, sin_theta, cos_theta, q_dot, theta_dot = state
+                return 1/2 * self.m1 * q_dot**2 + \
+                    1/2 * self.m2 * (q_dot**2 + self.l**2 * theta_dot**2 + 2 * q_dot * self.l * theta_dot * cos_theta)
 
         def H(state):
             """
@@ -105,18 +120,32 @@ class TOTA(Environment):
             """
             The system's dynamics.
             """
-            q, theta, q_dot, theta_dot = state
+            if not self.state_angle_transform:
+                q, theta, q_dot, theta_dot = state
 
-            theta_ddot_term1 = (self.k * q - control_input[0] - self.m2 * self.l * theta_dot**2 * jnp.sin(theta)) * jnp.cos(theta)
-            theta_ddot_term2 = (self.m1 + self.m2) * self.g * jnp.sin(theta)
-            theta_ddot_term3 = self.l * (self.m1 + self.m2 * jnp.sin(theta)**2)
-            theta_ddot = (theta_ddot_term1 - theta_ddot_term2) / theta_ddot_term3
+                theta_ddot_term1 = (self.k * q - control_input[0] - self.m2 * self.l * theta_dot**2 * jnp.sin(theta)) * jnp.cos(theta)
+                theta_ddot_term2 = (self.m1 + self.m2) * self.g * jnp.sin(theta)
+                theta_ddot_term3 = self.l * (self.m1 + self.m2 * jnp.sin(theta)**2)
+                theta_ddot = (theta_ddot_term1 - theta_ddot_term2) / theta_ddot_term3
 
-            q_ddot_term1 = control_input[0] - self.k * q + self.m2 * jnp.sin(theta) * (self.l * theta_dot**2 + self.g * jnp.cos(theta))
-            q_ddot_term2 = self.m1 + self.m2 * jnp.sin(theta)**2
-            q_ddot = q_ddot_term1 / q_ddot_term2
+                q_ddot_term1 = control_input[0] - self.k * q + self.m2 * jnp.sin(theta) * (self.l * theta_dot**2 + self.g * jnp.cos(theta))
+                q_ddot_term2 = self.m1 + self.m2 * jnp.sin(theta)**2
+                q_ddot = q_ddot_term1 / q_ddot_term2
 
-            return jnp.array([q_dot, theta_dot, q_ddot, theta_ddot])
+                return jnp.array([q_dot, theta_dot, q_ddot, theta_ddot])
+            else:
+                q, sin_theta, cos_theta, q_dot, theta_dot = state
+
+                theta_ddot_term1 = (self.k * q - control_input[0] - self.m2 * self.l * theta_dot**2 * sin_theta) * cos_theta
+                theta_ddot_term2 = (self.m1 + self.m2) * self.g * sin_theta
+                theta_ddot_term3 = self.l * (self.m1 + self.m2 * sin_theta**2)
+                theta_ddot = (theta_ddot_term1 - theta_ddot_term2) / theta_ddot_term3
+
+                q_ddot_term1 = control_input[0] - self.k * q + self.m2 * sin_theta * (self.l * theta_dot**2 + self.g * cos_theta)
+                q_ddot_term2 = self.m1 + self.m2 * sin_theta**2
+                q_ddot = q_ddot_term1 / q_ddot_term2
+
+                return jnp.array([q_dot, theta_dot * cos_theta, - theta_dot * sin_theta, q_ddot, theta_ddot])
         
         self.KE = jax.jit(KE)
         self.PE = jax.jit(PE)
@@ -211,18 +240,10 @@ def main():
                     g=9.81,
                     m2=1.0,
                     random_seed=32,
+                    state_angle_transform=True
                 )
 
     def control_policy(state, t, jax_key):
-        # q, p = state
-        # err = (0.5 - q)
-        # kp = 10.0
-        # kd = 2.0
-        # action = kp * err - kd * p
-        # return jnp.array([action])
-
-        # return 5.0 * jax.random.uniform(jax_key, shape=(1,), minval = -1.0, maxval=1.0)
-        # return jnp.array([jnp.sin(t)])
         return jnp.array([0.0])
 
     env.set_control_policy(control_policy)
@@ -233,8 +254,8 @@ def main():
     print('starting simulation')
     dataset = env.gen_dataset(trajectory_num_steps=1000, # 500
                                 num_trajectories=10, # 200 for training, 20 for testing
-                                x0_init_lb=jnp.array([-1.0, -1.0, -1.0, -1.0]),
-                                x0_init_ub=jnp.array([1.0, 1.0, 1.0, 1.0]),
+                                x0_init_lb=jnp.array([-1.0, -1.0, -1.0, -1.0, -1.0]),
+                                x0_init_ub=jnp.array([1.0, 1.0, 1.0, 1.0, 1.0]),
                                 save_str=save_dir,)
     print(time.time() - t)
     traj = dataset['state_trajectories'][0, :, :]

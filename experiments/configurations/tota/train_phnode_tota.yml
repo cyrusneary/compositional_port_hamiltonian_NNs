@@ -34,7 +34,7 @@ model_setup:
         activation : 'tanh'
 trainer_setup:
   trainer_type: 'sgd'
-  num_training_steps: 20000
+  num_training_steps: 100000
   minibatch_size: 32
   loss_setup:
     loss_function_type: 'phnode_loss' 
