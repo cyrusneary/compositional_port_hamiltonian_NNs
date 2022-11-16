@@ -6,6 +6,8 @@ import os, sys
 
 import pickle
 import datetime
+import jax.numpy as jnp
+import numpy as np
 
 sys.path.append('..')
 from sacred import Experiment
@@ -75,6 +77,32 @@ def experiment_main(
     # train_dataset, test_dataset = load_datasets(dataset_setup, _run)
     from helpers.dataloader import load_dataset_from_setup
     train_dataset, test_dataset = load_dataset_from_setup(dataset_setup)
+
+    # train_dataset['inputs'] = np.array(train_dataset['inputs'])
+    # train_dataset['outputs'] = np.array(train_dataset['outputs'])
+    # test_dataset['inputs'] = np.array(test_dataset['inputs'])
+    # test_dataset['outputs'] = np.array(test_dataset['outputs'])
+
+    # for i in range(train_dataset['inputs'].shape[0]):
+    #     train_dataset['inputs'][i, 2] = 2 * train_dataset['inputs'][i, 2] + train_dataset['inputs'][i, 3] * jnp.cos(train_dataset['inputs'][i, 1])
+    #     train_dataset['inputs'][i, 3] = train_dataset['inputs'][i, 2] * jnp.cos(train_dataset['inputs'][i, 1]) + train_dataset['inputs'][i, 3]
+
+    # for i in range(train_dataset['outputs'].shape[0]):
+    #     train_dataset['outputs'][i, 2] = 2 * train_dataset['outputs'][i, 2] + train_dataset['outputs'][i, 3] * jnp.cos(train_dataset['outputs'][i, 1])
+    #     train_dataset['outputs'][i, 3] = train_dataset['outputs'][i, 2] * jnp.cos(train_dataset['outputs'][i, 1]) + train_dataset['outputs'][i, 3]
+
+    # for i in range(test_dataset['inputs'].shape[0]):
+    #     test_dataset['inputs'][i, 2] = 2 * test_dataset['inputs'][i, 2] + test_dataset['inputs'][i, 3] * jnp.cos(test_dataset['inputs'][i, 1])
+    #     test_dataset['inputs'][i, 3] = test_dataset['inputs'][i, 2] * jnp.cos(test_dataset['inputs'][i, 1]) + test_dataset['inputs'][i, 3]
+
+    # for i in range(test_dataset['outputs'].shape[0]):
+    #     test_dataset['outputs'][i, 2] = 2 * test_dataset['outputs'][i, 2] + test_dataset['outputs'][i, 3] * jnp.cos(test_dataset['outputs'][i, 1])
+    #     test_dataset['outputs'][i, 3] = test_dataset['outputs'][i, 2] * jnp.cos(test_dataset['outputs'][i, 1]) + test_dataset['outputs'][i, 3]
+
+    # train_dataset['inputs'] = jnp.array(train_dataset['inputs'])
+    # train_dataset['outputs'] = jnp.array(train_dataset['outputs'])
+    # test_dataset['inputs'] = jnp.array(test_dataset['inputs'])
+    # test_dataset['outputs'] = jnp.array(test_dataset['outputs'])
 
     # Initialize the model to be trained.
     from helpers.model_factories import get_model_factory

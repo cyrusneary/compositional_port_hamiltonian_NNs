@@ -1,1 +1,1 @@
-# port_hamiltonian_modeling
+# Compositional Port-Hamiltonian Neural Networks
