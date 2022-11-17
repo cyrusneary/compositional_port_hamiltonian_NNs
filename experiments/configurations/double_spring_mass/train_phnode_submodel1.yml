@@ -31,18 +31,7 @@ model_setup:
       output_dim: 3
       nn_setup_params:
         output_sizes: [32, 32, 3]
-        activation : 'tanh'
-  # R_net_setup:
-  #   model_type : 'parametrized_matrix'
-  #   matrix_shape : [2,2]
-  #   parametrized_indeces : [[1,1]]
-  #   mlp_setup_params:
-  #     model_type : 'mlp'
-  #     input_dim : 2
-  #     output_dim: 1
-  #     nn_setup_params:
-  #       output_sizes: [32, 32, 1]
-  #       activation : 'tanh'
+        activation : 'relu'
 trainer_setup:
   trainer_type: 'sgd'
   num_training_steps: 20000

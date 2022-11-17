@@ -59,6 +59,8 @@ class CompositionalPHNODE(NODE):
         b_vec = []
         H_bar_vec = []
 
+        J_mat_composed_submodels = self.J_net_composed_submodels_forward(params, jnp.array([x[0,:]]))[0]
+
         dH = jax.grad(self.H_net_forward, argnums=1)
         for i in range(x.shape[0]):
             xi = x[i, :]
@@ -68,25 +70,39 @@ class CompositionalPHNODE(NODE):
             h = dH(params, xi)
             r = jnp.matmul(self.R_net_forward(params, jnp.array([xi]))[0], h)
             g = jnp.matmul(self.g_net_forward(params, jnp.array([xi]))[0], ui)
+            j_partial = jnp.matmul(J_mat_composed_submodels, h)
 
-            target = -(xi - yi) / self.dt - g + r
+            # target = -(xi - yi) / self.dt - g + r
+            # b_vec.append(target)
+            # Hbar = jnp.array([[h[1], h[2], h[3], 0.0, 0.0, 0.0],
+            #                 [-h[0], 0.0, 0.0, h[2], h[4], 0.0],
+            #                 [0.0, -h[0], 0.0, -h[1], 0.0, h[3]],
+            #                 [0.0, 0.0, -h[0], 0.0, -h[1], -h[2]]])
+            # H_bar_vec.append(Hbar)
+
+            target = -(xi - yi) / self.dt - g - j_partial + r
             b_vec.append(target)
-
-            Hbar = jnp.array([[h[1], h[2], h[3], 0.0, 0.0, 0.0],
-                            [-h[0], 0.0, 0.0, h[2], h[4], 0.0],
-                            [0.0, -h[0], 0.0, -h[1], 0.0, h[3]],
-                            [0.0, 0.0, -h[0], 0.0, -h[1], -h[2]]])
+            Hbar = jnp.array([[h[2], h[3], 0.0, 0.0],
+                            [0.0, 0.0, h[2], h[3]],
+                            [-h[0], 0.0, -h[1], 0.0],
+                            [0.0, -h[0], 0.0, -h[1]]])
             H_bar_vec.append(Hbar)
 
         b = jnp.hstack(b_vec)
         A = jnp.vstack(H_bar_vec)
 
-        J_vec, residuals, rank, singular_values = jnp.linalg.lstsq(A, b, rcond=None)
+        # J_vec, residuals, rank, singular_values = jnp.linalg.lstsq(A, b, rcond=None)
+        # J_mat = [[0.0, J_vec[0], J_vec[1], J_vec[2]], 
+        #                 [-J_vec[0], 0.0, J_vec[3], J_vec[4]], 
+        #                 [-J_vec[1], -J_vec[3], 0.0, J_vec[5]], 
+        #                 [-J_vec[2], -J_vec[4], -J_vec[5], 0.0]]
 
-        J_mat = [[0.0, J_vec[0], J_vec[1], J_vec[2]], 
-                        [-J_vec[0], 0.0, J_vec[3], J_vec[4]], 
-                        [-J_vec[1], -J_vec[3], 0.0, J_vec[5]], 
-                        [-J_vec[2], -J_vec[4], -J_vec[5], 0.0]]
+        C_vec, residuals, rank, singular_values = jnp.linalg.lstsq(A, b, rcond=None)
+        C_mat = [[0.0, 0.0, C_vec[0], C_vec[1]], 
+                    [0.0, 0.0, C_vec[2], C_vec[3]], 
+                    [-C_vec[0], -C_vec[2], 0.0, 0.0], 
+                    [-C_vec[1], -C_vec[3], 0.0, 0.0]]
+        J_mat = J_mat_composed_submodels + jnp.array(C_mat)
 
         return J_mat, residuals, rank
 
@@ -174,6 +190,20 @@ class CompositionalPHNODE(NODE):
                     jnp.sum(submodel.H_net_forward(submodel_params, jnp.array([state])))
             return output
         H_net = jax.jit(H_net)
+
+        # Define the joint interconnection matrix in terms of the interconnection matrices
+        # of the submodels.
+        def J_net_composed_submodels(params, x):
+            submodel_J_matrices = []
+            for submodel_ind in range(model_setup['num_submodels']):
+                state = x[state_slices[submodel_ind]]
+                submodel_params = params['submodel{}_params'.format(submodel_ind)]
+                submodel = submodel_list[submodel_ind]
+                submodel_J_matrices.append(
+                    submodel.J_net_forward(submodel_params, jnp.array([state]))[0])
+            J_net_composed_submodels = jla.block_diag(*submodel_J_matrices)
+            return J_net_composed_submodels
+        J_net_composed_submodels = jax.jit(J_net_composed_submodels)
 
         # Define the joint dissipation matrix in terms of the dissipation 
         # matrices of the submodels.
@@ -273,6 +303,7 @@ class CompositionalPHNODE(NODE):
         self.H_net_forward = H_net
         self.R_net_forward = jax.vmap(R_net, in_axes=(None, 0))
         self.g_net_forward = jax.vmap(g_net, in_axes=(None, 0))
+        self.J_net_composed_submodels_forward = jax.vmap(J_net_composed_submodels, in_axes=(None, 0))
         self.get_model_power = jax.vmap(get_model_power, in_axes=(None, 0, 0))
         self.submodel_list = submodel_list
         self.init_params = init_params

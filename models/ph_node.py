@@ -136,6 +136,9 @@ class PHNODE(NODE):
             J_net_forward = jax.vmap(self.J_net_forward, in_axes=(None, 0))
             self.structure_network = J_net
             self.J_net_forward = J_net_forward
+        else:
+            self.J_net_forward = lambda params, x : J
+            self.J_net_forward = jax.vmap(self.J_net_forward, in_axes=(None, 0))
 
         if 'R_net_setup' in self.model_setup:
             R_net_forward = jax.jit(

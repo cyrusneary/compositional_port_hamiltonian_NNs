@@ -18,8 +18,8 @@ import jax
 import numpy as np
 import matplotlib.pyplot as plt
 
-submodel0_run_id = 913 #809 #739 #697 #695 (Unknown J) didn't work #694 (unknown J) worked #515 (known J) # 494
-submodel1_run_id = 937 #810 #789 #698 #696 (Unknown J) didn't work #693 (unknown J) worked #516 (known J) # 484
+submodel0_run_id = 1064 #(known J) # 1512 #(unknown J) #  #913 #809 #739 #697 #695 (Unknown J) didn't work #694 (unknown J) worked #515 (known J) # 494
+submodel1_run_id = 1124 #(known J) # 1513 # (unknown J) #  #937 #810 #789 #698 #696 (Unknown J) didn't work #693 (unknown J) worked #516 (known J) # 484
 
 model_setup = {
     'model_type' : 'compositional_phnode',
@@ -64,7 +64,7 @@ dataset_setup = {
 
 train_dataset, test_dataset = load_dataset_from_setup(dataset_setup)
 
-num_datapoints = 6
+num_datapoints = 100
 datapoint_indeces = np.random.choice(len(train_dataset['inputs']), num_datapoints, replace=False)
 
 x = train_dataset['inputs'][datapoint_indeces]
@@ -79,7 +79,7 @@ print(residuals)
 
 model.set_constant_J_matrix(J_mat)
 
-def control_policy(state, t):
+def control_policy(state, t, jax_key):
     return jnp.array([jnp.sin(t)])
 
 traj_len = 500
