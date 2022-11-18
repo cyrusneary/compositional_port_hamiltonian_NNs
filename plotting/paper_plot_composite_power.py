@@ -48,7 +48,7 @@ true_dh_dt, true_J_pow, true_R_pow, true_g_pow = \
 print('Compted true trajectory and power in {} seconds'.format(time() - t))
 
 submodel1_run_indeces = [862, 863, 864, 865, 866] # known J 100 trajectories [739] 
-submodel2_run_indeces = [887, 888, 889, 890, 891] # known J 1000 trajectories [795] 
+submodel2_run_indeces = [887, 888, 889, 890, 891] # known J 100 trajectories [795] 
 sacred_save_path = os.path.abspath('../experiments/sacred_runs/')
 
 model_setup = {

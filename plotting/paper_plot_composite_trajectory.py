@@ -43,7 +43,7 @@ true_traj, tIndeces, control_inputs = env.gen_trajectory(init_state,
                         jax_key=subkey)
 
 submodel1_run_indeces = [862, 863, 864, 865, 866] # known J 100 trajectories
-submodel2_run_indeces = [887, 888, 889, 890, 891] # known J 1000 trajectories
+submodel2_run_indeces = [887, 888, 889, 890, 891] # known J 100 trajectories
 sacred_save_path = os.path.abspath('../experiments/sacred_runs/')
 
 model_setup = {
@@ -68,8 +68,9 @@ model_setup = {
 
 predicted_traj_list = []
 
-num_datapoints = 6
+num_datapoints = 4
 datapoint_indeces = np.random.choice(true_traj.shape[0] - 1, num_datapoints, replace=False)
+datapoint_indeces = np.array([100, 250, 500, 750])
 datapoint_out_indeces = datapoint_indeces + 1
 # datapoint_indeces = slice(0, (num_datapoints+1))
 # datapoint_out_indeces = slice(1, (num_datapoints+1) + 1)
@@ -107,8 +108,8 @@ predicted_upper = np.percentile(predicted_trajectories, 75, axis=0)
 predicted_median = np.percentile(predicted_trajectories, 50, axis=0)
 
 n = 10
-submodel1Color = '#4F359B'
-submodel2Color = '#07742D'
+submodel1Color = 'orange'
+submodel2Color = 'green'
 
 fig = plt.figure(figsize=(7,4))
 ax = fig.add_subplot(111)
@@ -146,7 +147,7 @@ ax.set_xlabel('Time $[s]$', fontsize=16)
 ax.grid()
 ax.legend()
 
-plt.show()
+# plt.show()
 
-# import tikzplotlib
-# tikzplotlib.save("compositional_phnode_predicted_trajectory.tex")
+import tikzplotlib
+tikzplotlib.save("compositional_phnode_predicted_trajectory.tex")
