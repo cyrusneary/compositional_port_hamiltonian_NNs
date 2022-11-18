@@ -4,7 +4,7 @@ sys.path.append('..')
 import matplotlib.pyplot as plt
 import numpy as np
 
-from common import load_metrics
+from common import load_metrics, load_config_file, load_model, load_dataset
 
 sacred_save_path = os.path.abspath('../experiments/sacred_runs/')
 
@@ -14,14 +14,19 @@ sacred_save_path = os.path.abspath('../experiments/sacred_runs/')
 # upper bound for each number of trajectories, and a list of the median error
 # for a given number of trajectories.
 
-run_indeces = [996, 997, 998, 999, 1000, 1001, 1002, 1003, 1004, 1005]
+run_indeces = [1578, 1579, 1580, 1581, 1582, 1583, 1584, 1585, 1586, 1587] #[996, 997, 998, 999, 1000, 1001, 1002, 1003, 1004, 1005]
+
+# config = load_config_file(run_indeces[0], sacred_save_path)
+# model, params = load_model(run_indeces[0], sacred_save_path)
+# datasets = load_dataset(run_indeces[0], sacred_save_path)
+# results = load_metrics(run_indeces[0], sacred_save_path)
 
 composite_model_test_loss = []
 submodel_1_train_loss = []
 submodel_2_train_loss = []
 
 N = 1000 # smoothing window
-num_training_iterations = 20000
+num_training_iterations = 50000
 num_points_to_include = 100
 
 for i in range(len(run_indeces)):
@@ -108,34 +113,34 @@ fig = plt.figure()
 ax = fig.add_subplot(111)
 
 # ax.plot(training_iterations, composite_test_loss_25, alpha=0.5, color='blue')
-ax.plot(training_iterations, composite_test_loss_50, label='Composite Model Testing Loss', linewidth=3)
+ax.plot(training_iterations, composite_test_loss_50, label='Composite Model Testing Loss', linewidth=3, color='blue')
 # ax.plot(training_iterations, composite_test_loss_75, alpha=0.5, color='blue')
 ax.fill_between(training_iterations, composite_test_loss_25, composite_test_loss_75, alpha=0.2, color='blue')
 
 # ax.plot(training_iterations, submodel_1_train_loss_25, alpha=0.5, color='red')
-ax.plot(training_iterations, submodel_1_train_loss_50, label='Submodel 1 Training Loss', linewidth=3)
+ax.plot(training_iterations, submodel_1_train_loss_50, label='Submodel 1 Training Loss', linewidth=3, color='green')
 # ax.plot(training_iterations, submodel_1_train_loss_75, alpha=0.5, color='red')
-ax.fill_between(training_iterations, submodel_1_train_loss_25, submodel_1_train_loss_75, alpha=0.2, color='red')
+ax.fill_between(training_iterations, submodel_1_train_loss_25, submodel_1_train_loss_75, alpha=0.2, color='green')
 
 # ax.plot(training_iterations, submodel_2_train_loss_25, alpha=0.5, color='green')
-ax.plot(training_iterations, submodel_2_train_loss_50, label='Submodel 2 Training Loss', linewidth=3)
+ax.plot(training_iterations, submodel_2_train_loss_50, label='Submodel 2 Training Loss', linewidth=3, color='orange')
 # ax.plot(training_iterations, submodel_2_train_loss_75, alpha=0.5, color='green')
-ax.fill_between(training_iterations, submodel_2_train_loss_25, submodel_2_train_loss_75, alpha=0.2, color='green')
+ax.fill_between(training_iterations, submodel_2_train_loss_25, submodel_2_train_loss_75, alpha=0.2, color='orange')
 
-# ax.plot(training_iterations, vanilla_node_test_loss_25, alpha=0.5, color='orange')
-ax.plot(training_iterations, vanilla_node_test_loss_50, label='Vanilla Node Testing Loss', linewidth=3)
-# ax.plot(training_iterations, vanilla_node_test_loss_75, alpha=0.5, color='orange')
-ax.fill_between(training_iterations, vanilla_node_test_loss_25, vanilla_node_test_loss_75, alpha=0.2, color='orange')
+# # ax.plot(training_iterations, vanilla_node_test_loss_25, alpha=0.5, color='orange')
+# ax.plot(training_iterations, vanilla_node_test_loss_50, label='Vanilla Node Testing Loss', linewidth=3, color='red')
+# # ax.plot(training_iterations, vanilla_node_test_loss_75, alpha=0.5, color='orange')
+# ax.fill_between(training_iterations, vanilla_node_test_loss_25, vanilla_node_test_loss_75, alpha=0.2, color='red')
 
-# ax.plot(training_iterations, monolithic_phnode_known_j_test_loss_25, alpha=0.5, color='purple')
-ax.plot(training_iterations, monolithic_phnode_known_j_test_loss_50, label='Monolithic PHNODE Known J Testing Loss', linewidth=3)
-# ax.plot(training_iterations, monolithic_phnode_known_j_test_loss_75, alpha=0.5, color='purple')
-ax.fill_between(training_iterations, monolithic_phnode_known_j_test_loss_25, monolithic_phnode_known_j_test_loss_75, alpha=0.2, color='purple')
+# # ax.plot(training_iterations, monolithic_phnode_known_j_test_loss_25, alpha=0.5, color='purple')
+# ax.plot(training_iterations, monolithic_phnode_known_j_test_loss_50, label='Monolithic PHNODE Known J Testing Loss', linewidth=3, color='purple')
+# # ax.plot(training_iterations, monolithic_phnode_known_j_test_loss_75, alpha=0.5, color='purple')
+# ax.fill_between(training_iterations, monolithic_phnode_known_j_test_loss_25, monolithic_phnode_known_j_test_loss_75, alpha=0.2, color='purple')
 
-# ax.plot(training_iterations, monolithic_phnode_unknown_j_test_loss_25, alpha=0.5, color='black')
-ax.plot(training_iterations, monolithic_phnode_unknown_j_test_loss_50, label='Monolithic PHNODE Unknown J Testing Loss', linewidth=3)
-# ax.plot(training_iterations, monolithic_phnode_unknown_j_test_loss_75, alpha=0.5, color='black')
-ax.fill_between(training_iterations, monolithic_phnode_unknown_j_test_loss_25, monolithic_phnode_unknown_j_test_loss_75, alpha=0.2, color='black')
+# # ax.plot(training_iterations, monolithic_phnode_unknown_j_test_loss_25, alpha=0.5, color='black')
+# ax.plot(training_iterations, monolithic_phnode_unknown_j_test_loss_50, label='Monolithic PHNODE Unknown J Testing Loss', linewidth=3, color='black')
+# # ax.plot(training_iterations, monolithic_phnode_unknown_j_test_loss_75, alpha=0.5, color='black')
+# ax.fill_between(training_iterations, monolithic_phnode_unknown_j_test_loss_25, monolithic_phnode_unknown_j_test_loss_75, alpha=0.2, color='black')
 
 ax.set_xlabel('Training Iterations')
 ax.set_ylabel('Loss')
@@ -144,10 +149,10 @@ ax.set_yscale('log')
 ax.legend()
 ax.grid()
 
-plt.show()
+# plt.show()
 
-# import tikzplotlib
-# tikzplotlib.save("tikz/compositional_phnode_training_losses.tex")
+import tikzplotlib
+tikzplotlib.save("tikz/compositional_phnode_training_losses.tex")
 
 # fig = plt.figure()
 # ax = fig.add_subplot(111)

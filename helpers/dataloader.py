@@ -165,13 +165,15 @@ class TrajectoryDataLoader(DataLoader):
         train_dataset = {
             'inputs' : train_trajectories['state_trajectories'][0:num_training_trajectories, :-1, :],
             'outputs' : train_trajectories['state_trajectories'][0:num_training_trajectories, 1:, :],
+            'config' : train_trajectories['config'],
         }
         if 'control_inputs' in train_trajectories:
             train_dataset['control_inputs'] = train_trajectories['control_inputs'][0:num_training_trajectories, :-1, :]
 
         test_dataset = {
             'inputs' : test_trajectories['state_trajectories'][0:num_testing_trajectories, :-1, :],
-            'outputs' : test_trajectories['state_trajectories'][0:num_testing_trajectories, 1:, :]
+            'outputs' : test_trajectories['state_trajectories'][0:num_testing_trajectories, 1:, :],
+            'config' : test_trajectories['config'],
         }
         if 'control_inputs' in test_trajectories:
             test_dataset['control_inputs'] = test_trajectories['control_inputs'][0:num_testing_trajectories, :-1, :]
@@ -263,6 +265,7 @@ class TrajectoryMultiModelDataLoader(TrajectoryDataLoader):
             dset = {
                 'inputs' : dset_trajectories['state_trajectories'][0:num_training_trajectories, :-1, :],
                 'outputs' : dset_trajectories['state_trajectories'][0:num_training_trajectories, 1:, :],
+                'config' : dset_trajectories['config'],
             }
             if 'control_inputs' in dset_trajectories:
                 dset['control_inputs'] = dset_trajectories['control_inputs'][0:num_training_trajectories, :-1, :]
@@ -282,7 +285,8 @@ class TrajectoryMultiModelDataLoader(TrajectoryDataLoader):
         test_trajectories = self.load_from_pickle(test_dataset_path, test_dataset_file_name)
         test_dataset = {
             'inputs' : test_trajectories['state_trajectories'][0:num_testing_trajectories, :-1, :],
-            'outputs' : test_trajectories['state_trajectories'][0:num_testing_trajectories, 1:, :]
+            'outputs' : test_trajectories['state_trajectories'][0:num_testing_trajectories, 1:, :],
+            'config' : test_trajectories['config'],
         }
         if 'control_inputs' in test_trajectories:
             test_dataset['control_inputs'] = test_trajectories['control_inputs'][0:num_testing_trajectories, :-1, :]

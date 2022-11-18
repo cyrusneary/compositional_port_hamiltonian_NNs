@@ -10,7 +10,6 @@ dataset_setup :
   test_dataset_path : '../environments/double_mass_spring_data'
   num_training_trajectories : 100
   num_testing_trajectories : 20
-
 model_setup:
   model_type : 'compositional_phnode'
   dt : 0.01
@@ -53,17 +52,6 @@ model_setup:
         nn_setup_params:
           output_sizes: [32, 32, 3]
           activation : 'tanh'
-    # R_net_setup:
-    #   model_type : 'parametrized_matrix'
-    #   matrix_shape : [2,2]
-    #   parametrized_indeces : [[1,1]]
-    #   mlp_setup_params:
-    #     model_type : 'mlp'
-    #     input_dim : 2
-    #     output_dim: 1
-    #     nn_setup_params:
-    #       output_sizes: [32, 32, 1]
-    #       activation : 'tanh'
   submodel1_setup:
     model_type : 'phnode'
     input_dim : 2
@@ -90,31 +78,19 @@ model_setup:
         nn_setup_params:
           output_sizes: [32, 32, 3]
           activation : 'tanh'
-    # R_net_setup:
-    #   model_type : 'parametrized_matrix'
-    #   matrix_shape : [2,2]
-    #   parametrized_indeces : [[1,1]]
-    #   mlp_setup_params:
-    #     model_type : 'mlp'
-    #     input_dim : 2
-    #     output_dim: 1
-    #     nn_setup_params:
-    #       output_sizes: [32, 32, 1]
-    #       activation : 'tanh'
     g_net_setup :
       model_type : 'parametrized_constant_matrix'
       matrix_shape : [2,1]
       parametrized_indeces : [[0,0], [1,0]]
-
 trainer_setup:
   trainer_type : 'compositional_phnode'
   num_subtrainers : 2
-  num_training_steps : 30000
+  num_training_steps : 50000 #30000
   loss_setup:
     loss_function_type: 'compositional_phnode_with_control_loss' 
   subtrainer0_setup:
     trainer_type: 'sgd'
-    num_training_steps: 30000
+    num_training_steps: 50000 #30000
     minibatch_size: 32
     loss_setup:
       loss_function_type: 'phnode_loss' 
@@ -122,10 +98,10 @@ trainer_setup:
       pen_l1_dissipation_params : 0.0 # !!float 1e-6 # !!float 1e-8 # !!float 1e-4
     optimizer_setup:
       name: 'adam'
-      learning_rate : !!float 1e-3
+      learning_rate : !!float 1e-3 # !!float 1e-3
   subtrainer1_setup:
     trainer_type: 'node_with_control'
-    num_training_steps: 30000
+    num_training_steps: 50000 #30000
     minibatch_size: 32
     loss_setup:
       loss_function_type: 'phnode_with_control_loss' 
@@ -134,4 +110,4 @@ trainer_setup:
       pen_l1_control_params : 0.0 # !!float 1e-6
     optimizer_setup:
       name: 'adam'
-      learning_rate : !!float 1e-3
+      learning_rate : !!float 1e-3 # !!float 1e-3
