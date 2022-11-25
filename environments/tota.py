@@ -51,7 +51,8 @@ class TOTA(Environment):
                 dt=0.01, 
                 random_seed=42,
                 m1 : jnp.float32 = 1, 
-                k : jnp.float32 = 1, 
+                k : jnp.float32 = 1.2, 
+                b : jnp.float32 = 1.7,
                 l : jnp.float32 = 1,
                 g : jnp.float32 = 9.81,
                 m2 : jnp.float32 = 1,
@@ -62,6 +63,7 @@ class TOTA(Environment):
         """
         self.m1 = m1
         self.k = k
+        self.b = b
         self.l = l
         self.g = g
         self.m2 = m2
@@ -70,6 +72,7 @@ class TOTA(Environment):
 
         self.config['m1'] = m1
         self.config['k'] = k
+        self.config['b'] = b
         self.config['l'] = l
         self.config['g'] = g
         self.config['m2'] = m2
@@ -80,14 +83,14 @@ class TOTA(Environment):
             """
             The system's potential energy.
             """
-            q, theta, q_dot, theta_dot = state
+            q, q_dot, theta, theta_dot = state
             return 1/2 * self.k * q**2 - self.m2 * self.g * self.l * jnp.cos(theta)
 
         def KE(state):
             """
             The system's kinetic energy.
             """
-            q, theta, q_dot, theta_dot = state
+            q, q_dot, theta, theta_dot = state
             return 1/2 * self.m1 * q_dot**2 + \
                 1/2 * self.m2 * (q_dot**2 + self.l**2 * theta_dot**2 + 2 * q_dot * self.l * theta_dot * jnp.cos(theta))
 
@@ -105,18 +108,18 @@ class TOTA(Environment):
             """
             The system's dynamics.
             """
-            q, theta, q_dot, theta_dot = state
+            q, q_dot, theta, theta_dot = state
 
-            theta_ddot_term1 = (self.k * q - control_input[0] - self.m2 * self.l * theta_dot**2 * jnp.sin(theta)) * jnp.cos(theta)
+            theta_ddot_term1 = (self.k * q + self.b * q_dot**3 - control_input[0] - self.m2 * self.l * theta_dot**2 * jnp.sin(theta)) * jnp.cos(theta)
             theta_ddot_term2 = (self.m1 + self.m2) * self.g * jnp.sin(theta)
             theta_ddot_term3 = self.l * (self.m1 + self.m2 * jnp.sin(theta)**2)
             theta_ddot = (theta_ddot_term1 - theta_ddot_term2) / theta_ddot_term3
 
-            q_ddot_term1 = control_input[0] - self.k * q + self.m2 * jnp.sin(theta) * (self.l * theta_dot**2 + self.g * jnp.cos(theta))
+            q_ddot_term1 = control_input[0] - self.k * q - self.b * q_dot**3 + self.m2 * jnp.sin(theta) * (self.l * theta_dot**2 + self.g * jnp.cos(theta))
             q_ddot_term2 = self.m1 + self.m2 * jnp.sin(theta)**2
             q_ddot = q_ddot_term1 / q_ddot_term2
 
-            return jnp.array([q_dot, theta_dot, q_ddot, theta_ddot])
+            return jnp.array([q_dot, q_ddot, theta_dot, theta_ddot])
         
         self.KE = jax.jit(KE)
         self.PE = jax.jit(PE)
@@ -138,14 +141,14 @@ class TOTA(Environment):
         ax.set_xlabel('Time $[s]$', fontsize=fontsize)
         ax.grid()
 
-        theta = trajectory[:, 1]
+        theta = trajectory[:, 2]
         ax = fig.add_subplot(412)
         ax.plot(T, theta, linewidth=linewidth)
         ax.set_ylabel(r'$theta$ $[kg\frac{m}{s}]$', fontsize=fontsize)
         ax.set_xlabel('Time $[s]$', fontsize=fontsize)
         ax.grid()
 
-        q_dot = trajectory[:, 2]
+        q_dot = trajectory[:, 1]
         ax = fig.add_subplot(413)
         ax.plot(T, q_dot, linewidth=linewidth)
         ax.set_ylabel(r'$q\_dot$ $[m/s]$', fontsize=fontsize)
@@ -206,7 +209,8 @@ class TOTA(Environment):
 def main():
     env = TOTA(dt=0.01, 
                     m1=1.0, 
-                    k=1.0,#k=1.5, 
+                    k=1.2,#k=1.5, 
+                    b=1.7,
                     l=1.0,
                     g=9.81,
                     m2=1.0,
@@ -231,8 +235,8 @@ def main():
     save_dir = os.path.abspath(os.path.join(curdir, 'tota_data'))
     t = time.time()
     print('starting simulation')
-    dataset = env.gen_dataset(trajectory_num_steps=1000, # 500
-                                num_trajectories=10, # 200 for training, 20 for testing
+    dataset = env.gen_dataset(trajectory_num_steps=100, # 500
+                                num_trajectories=200, # 200 for training, 20 for testing
                                 x0_init_lb=jnp.array([-1.0, -1.0, -1.0, -1.0]),
                                 x0_init_ub=jnp.array([1.0, 1.0, 1.0, 1.0]),
                                 save_str=save_dir,)
