@@ -31,7 +31,7 @@ model_setup:
       output_dim: 3
       nn_setup_params:
         output_sizes: [32, 32, 3]
-        activation : 'relu'
+        activation : 'tanh'
 trainer_setup:
   trainer_type: 'sgd'
   num_training_steps: 20000

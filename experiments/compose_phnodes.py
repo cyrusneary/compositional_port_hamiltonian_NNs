@@ -18,8 +18,8 @@ import jax
 import numpy as np
 import matplotlib.pyplot as plt
 
-submodel0_run_id = 1064 #(known J) # 1512 #(unknown J) #  #913 #809 #739 #697 #695 (Unknown J) didn't work #694 (unknown J) worked #515 (known J) # 494
-submodel1_run_id = 1124 #(known J) # 1513 # (unknown J) #  #937 #810 #789 #698 #696 (Unknown J) didn't work #693 (unknown J) worked #516 (known J) # 484
+submodel0_run_id = 1573 # 1064 #(known J) # 1512 #(unknown J) #  #913 #809 #739 #697 #695 (Unknown J) didn't work #694 (unknown J) worked #515 (known J) # 494
+submodel1_run_id = 1572 # 1124 #(known J) # 1513 # (unknown J) #  #937 #810 #789 #698 #696 (Unknown J) didn't work #693 (unknown J) worked #516 (known J) # 484
 
 model_setup = {
     'model_type' : 'compositional_phnode',

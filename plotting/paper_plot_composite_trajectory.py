@@ -42,8 +42,10 @@ true_traj, tIndeces, control_inputs = env.gen_trajectory(init_state,
                         trajectory_num_steps=1000,
                         jax_key=subkey)
 
-submodel1_run_indeces = [862, 863, 864, 865, 866] # known J 100 trajectories
-submodel2_run_indeces = [887, 888, 889, 890, 891] # known J 100 trajectories
+# submodel1_run_indeces = [862, 863, 864, 865, 866] # known J 100 trajectories
+# submodel2_run_indeces = [887, 888, 889, 890, 891] # known J 100 trajectories
+submodel1_run_indeces = [1516, 1517, 1518, 1519, 1520, 1521, 1522, 1523, 1524, 1525] # unknown J 100 trajectories
+submodel2_run_indeces = [1536, 1537, 1538, 1539, 1540, 1541, 1542, 1543, 1544, 1545] # unknown J 100 trajectories
 sacred_save_path = os.path.abspath('../experiments/sacred_runs/')
 
 model_setup = {
@@ -147,7 +149,7 @@ ax.set_xlabel('Time $[s]$', fontsize=16)
 ax.grid()
 ax.legend()
 
-# plt.show()
+plt.show()
 
-import tikzplotlib
-tikzplotlib.save("compositional_phnode_predicted_trajectory.tex")
+# import tikzplotlib
+# tikzplotlib.save("compositional_phnode_predicted_trajectory_unknown_J.tex")

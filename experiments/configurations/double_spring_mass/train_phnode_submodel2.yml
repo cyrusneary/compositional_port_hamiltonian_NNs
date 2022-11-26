@@ -31,7 +31,7 @@ model_setup:
       output_dim: 3
       nn_setup_params:
         output_sizes: [32, 32, 3]
-        activation : 'relu'
+        activation : 'tanh'
   g_net_setup :
     model_type : 'parametrized_constant_matrix'
     matrix_shape : [2,1]

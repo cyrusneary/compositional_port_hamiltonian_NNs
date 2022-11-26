@@ -2,8 +2,8 @@ import yaml
 
 config_list = []
 
-config_list.append('configurations/double_spring_mass/train_phnode_submodel1.yml')
-config_list.append('configurations/double_spring_mass/train_phnode_submodel2.yml')
+# config_list.append('configurations/double_spring_mass/train_phnode_submodel1.yml')
+# config_list.append('configurations/double_spring_mass/train_phnode_submodel2.yml')
 # config_list.append('configurations/double_spring_mass/train_phnode_submodel1_unknown_J.yml')
 # config_list.append('configurations/double_spring_mass/train_phnode_submodel2_unknown_J.yml')
 # config_list.append('configurations/double_spring_mass/train_phnode_known_J_nonlinear_damped_control_double_spring_mass.yml')
@@ -11,7 +11,9 @@ config_list.append('configurations/double_spring_mass/train_phnode_submodel2.yml
 
 # config_list.append('configurations/double_spring_mass/train_neural_ode_nonlinear_damped_control_double_mass_spring.yml')
 
-num_runs_per_experiment = 20
+config_list.append('configurations/double_spring_mass/train_compositional_phnode_double_spring_mass.yml')
+
+num_runs_per_experiment = 10
 num_training_trajectories_list = [100] #[1, 2, 5, 10, 50, 100]
 
 for i in range(len(config_list)):
