@@ -64,6 +64,15 @@ class CompositionalPortHamiltonianNodeFactory(ModelFactory):
         return CompositionalPHNODE(rng_key=rng_key,
                         model_setup=self.model_setup)
 
+class ModularPortHamiltonianNodeFactory(ModelFactory):
+    """Factory that creates a port-Hamiltonian nerual ODE."""
+    
+    def create_model(self, rng_key : jax.random.PRNGKey):
+        """Instantiate a port-Hamiltonian neural ODE."""
+        from models.modular_constructed_ph_node import ModularPHNODE
+        return ModularPHNODE(rng_key=rng_key,
+                        model_setup=self.model_setup)
+
 class MLPAutoencoderFactory(ModelFactory):
     """Factory that creates an autoencoder."""
 
@@ -171,6 +180,7 @@ model_factories = {
     'hnode' : HamiltonianNodeFactory,
     'mlp' : MlpFactory,
     'compositional_phnode' : CompositionalPortHamiltonianNodeFactory,
+    'modular_phnode' : ModularPortHamiltonianNodeFactory,
     'autoencoder_mlp' : MLPAutoencoderFactory,
     'autoencoder_conv' : ConvAutoencoderFactory,
     'autoencoder_node' : AutoencoderNodeFactory,
