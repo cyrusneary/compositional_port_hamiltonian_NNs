@@ -23,6 +23,17 @@ class SGDTrainerFactory(trainerFactory):
         return SGDTrainer(model,
                             model.init_params,
                             self.trainer_setup)
+        
+class SGDTrainerFreezeParamsFactory(trainerFactory):
+    """Factory method that creates a standard SGD model trainer object."""
+
+    def create_trainer(self, model):
+        """Create a standard SGD model trainer object."""
+        from trainers.sgd_trainer_freeze_params import SGDTrainerFreezeParams
+
+        return SGDTrainerFreezeParams(model,
+                                        model.init_params,
+                                        self.trainer_setup)
 
 class NodeTrainerWithControlFactory(trainerFactory):
     """Factory method that creates a NODE trainer with controls."""
@@ -65,6 +76,7 @@ class CompositionalPHNodeTrainerFactory(trainerFactory):
 # appropriate trainer factories.
 trainer_factories = {
     'sgd' : SGDTrainerFactory,
+    'sgd_freeze_params' : SGDTrainerFreezeParamsFactory,
     'node_with_control' : NodeTrainerWithControlFactory,
     'compositional_phnode' : CompositionalPHNodeTrainerFactory,
 }

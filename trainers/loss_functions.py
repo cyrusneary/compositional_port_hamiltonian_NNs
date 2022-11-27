@@ -231,6 +231,59 @@ def phnode_with_control_loss_constructor(model, loss_function_setup):
 
     return loss
 
+def compositional_phnode_loss_constructor(model, loss_function_setup):
+
+    forward = model.forward
+    pen_l2_nn_params = float(loss_function_setup['pen_l2_nn_params'])
+
+    def loss(params, 
+            x : jnp.ndarray,
+            y : jnp.ndarray) -> jnp.float32:
+        """
+        Loss function
+
+        Parameters
+        ----------
+        params :
+            The parameters of the forward model.
+        x :
+            Array representing the input(s) on which to evaluate the forward model.
+            The last axis should index the dimensions of the individual datapoints.
+        u : 
+            Array representing the control input(s) on which to evaluate the forward model.
+        y : 
+            Array representing the labeled model output(s).
+            The last axis should index the dimensions of the individual datapoints.
+
+        Returns
+        -------
+        total_loss :
+            The computed loss on the labeled datapoints.
+        """
+        out = forward(params, x, None)
+        num_datapoints = x.shape[0]
+        
+        data_loss = jnp.sum((out - y)**2) / num_datapoints
+        normalized_data_loss = data_loss / (jnp.sum(y**2) / num_datapoints)
+        # data_loss = jnp.average(jnp.linalg.norm(out - y, axis=1, ord=2))
+        # normalized_data_loss = data_loss / jnp.average(jnp.linalg.norm(y, axis=1, ord=2))
+        
+        regularization_loss = pen_l2_nn_params * \
+            sum(jnp.sum(jnp.square(p)) for p in jax.tree_util.tree_leaves(params))
+
+        total_loss = data_loss + regularization_loss
+
+        # Build a dictionary of the breakdown of the loss function.
+        loss_vals = {
+            'total_loss' : total_loss,
+            'data_loss' : data_loss,
+            'regularization_loss' : regularization_loss,
+            'normalized_data_loss' : normalized_data_loss
+        }
+        return total_loss, loss_vals
+
+    return loss
+
 def compositional_phnode_with_control_loss_constructor(model, loss_function_setup):
 
     def loss(params, 
@@ -284,6 +337,7 @@ loss_function_factory ={
     'l2_loss_with_control' : l2_loss_with_control_constructor,
     'phnode_loss' : phnode_loss_constructor,
     'phnode_with_control_loss' : phnode_with_control_loss_constructor,
+    'compositional_phnode_loss' : compositional_phnode_loss_constructor,
     'compositional_phnode_with_control_loss' : compositional_phnode_with_control_loss_constructor
 }
 

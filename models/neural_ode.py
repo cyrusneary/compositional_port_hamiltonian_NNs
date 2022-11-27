@@ -83,12 +83,19 @@ class NODE(object):
         for step in range(1, num_steps):
             t = times[-1]
             rng_key, subkey = jax.random.split(rng_key)
-            control_input = jnp.array([control_policy(next_state, t, subkey)])
+            control_input = control_policy(next_state, t, subkey)
+            control_inputs.append(control_input)
+            if control_input is not None:
+                control_input = jnp.array([control_input])
+            # control_input = jnp.array([control_policy(next_state, t, subkey)])
             next_state = self.forward(params, next_state, control_input)
             trajectory.append(next_state[0])
-            control_inputs.append(control_input[0])
+            # control_inputs.append(control_input[0])
             times.append(t + self.dt)
-        control_inputs.append(control_input[0])
+        if control_input is not None:
+            control_inputs.append(control_input[0])
+        else:
+            control_inputs.append(None)
 
         trajectory = {
             'state_trajectory' : np.array(trajectory),

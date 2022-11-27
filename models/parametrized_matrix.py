@@ -11,7 +11,7 @@ from .common import get_matrix_from_vector_and_parameter_indeces
 
 class ParametrizedMatrix(object):
     """
-    Model a parametrized symmetric matrix with positive entries.
+    Model a parametrized matrix.
     """
 
     def __init__(self, 

@@ -45,14 +45,15 @@ def config():
 
 # #     # ex.add_config('configurations/double_spring_mass/train_phnode_known_J_nonlinear_damped_control_double_spring_mass.yml')
 #     ex.add_config('configurations/double_spring_mass/train_phnode_unknown_J_nonlinear_damped_control_double_spring_mass.yml')
-#     # ex.add_config('configurations/double_spring_mass/train_phnode_submodel1.yml')
+    # ex.add_config('configurations/double_spring_mass/train_phnode_submodel1.yml')
 #     # ex.add_config('configurations/double_spring_mass/train_phnode_submodel2.yml')
 #     # ex.add_config('configurations/double_spring_mass/train_phnode_submodel1_unknown_J.yml')
 #     # ex.add_config('configurations/double_spring_mass/train_phnode_submodel2_unknown_J.yml')
 
     # TOTA experiments
-    ex.add_config('configurations/tota/train_phnode_tota.yml')
-    # ex.add_config('configurations/tota/train_node_tota.yml')
+    # ex.add_config('configurations/tota/train_phnode_tota.yml')
+    # ex.add_config('configurati/ons/tota/train_node_tota.yml')
+    ex.add_config('configurations/tota/train_modular_phnode_tota.yml')
 
 @ex.automain
 def experiment_main(

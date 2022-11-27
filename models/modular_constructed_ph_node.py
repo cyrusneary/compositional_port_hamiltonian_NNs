@@ -76,18 +76,19 @@ class ModularPHNODE(NODE):
         init_params = {}
         submodel_list = []
 
-        if 'load_pretrained_submodels' in model_setup \
-            and model_setup['load_pretrained_submodels']:
-            for submodel_ind in range(self.num_submodels):
+        # Construct the submodels.
+        for submodel_ind in range(self.num_submodels):
+            # If the run id is specified in the model setup, 
+            # then load the corresponding pre-trained model.
+            if 'submodel{}_run_id'.format(submodel_ind) in model_setup:
                 run_id = model_setup['submodel{}_run_id'.format(submodel_ind)]
                 submodel, params = load_model(run_id, self.sacred_save_path)
                 submodel_list.append(submodel)
                 init_params['submodel{}_params'.format(submodel_ind)] = params
-
                 model_setup['submodel{}_setup'.format(submodel_ind)] = submodel.model_setup
-        else:
-            # Instantiate each submodel, each of which is itself a port-Hamiltonian neural ODE.
-            for submodel_ind in range(self.num_submodels):
+                
+            # Otherwise, build a new model.
+            else:
                 self.rng_key, subkey = jax.random.split(self.rng_key)
 
                 submodel_setup = model_setup['submodel{}_setup'.format(submodel_ind)]
@@ -109,7 +110,7 @@ class ModularPHNODE(NODE):
                 slice(state_slice_ind, (state_slice_ind + submodel_setup['input_dim']))
             state_slice_ind = state_slice_ind + submodel_setup['input_dim']
 
-            if 'control_inputs' in submodel_setup:
+            if 'control_inputs' in submodel_setup and submodel_setup['control_inputs']:
                 control_slices[submodel_ind] = \
                     slice(control_slice_ind, (control_slice_ind + submodel_setup['control_dim']))
                 control_slice_ind = control_slice_ind + submodel_setup['control_dim']
@@ -119,8 +120,8 @@ class ModularPHNODE(NODE):
         # Define J, the skew-symmetric structure matrix defining the energy
         # transfer between subsystems.
         self.rng_key, subkey = jax.random.split(self.rng_key)
-        J_net = get_model_factory(self.model_setup['J_net_setup']).create_model(subkey)
-        init_params['J_net_params'] = J_net.init_params
+        C_net = get_model_factory(self.model_setup['C_net_setup']).create_model(subkey)
+        init_params['C_net_params'] = C_net.init_params
 
         # Define the joint Hamiltonian network as the sum of the hamiltonian 
         # networks of the submodels.
@@ -148,6 +149,13 @@ class ModularPHNODE(NODE):
             J_net_composed_submodels = jla.block_diag(*submodel_J_matrices)
             return J_net_composed_submodels
         J_net_composed_submodels = jax.jit(J_net_composed_submodels)
+
+        def J_net(params, x):
+            J_net_no_C = J_net_composed_submodels(params, x)
+            composition_term = C_net.forward(params['C_net_params'], x)
+            C = composition_term - composition_term.transpose()
+            return J_net_no_C + C
+        J_net = jax.jit(J_net)
 
         # Define the joint dissipation matrix in terms of the dissipation 
         # matrices of the submodels.
@@ -201,11 +209,15 @@ class ModularPHNODE(NODE):
                 H = lambda x : jnp.sum(H_net(params, x))
                 dh = jax.grad(H)(x)
 
-                J_val = J_net.forward(params['J_net_params'], x)
+                J_val = J_net(params, x)
                 R_val = R_net(params, x)
                 g_val = g_net(params, x)
                 
-                return jnp.matmul(J_val - R_val, dh) + jnp.matmul(g_val, u)
+                out = jnp.matmul(J_val - R_val, dh)
+                if u is not None:
+                    out = out + jnp.matmul(g_val, u)
+                
+                return out
 
             f_fixed_control = lambda x, t=0: f_approximator(x, t, u)
 
@@ -226,7 +238,7 @@ class ModularPHNODE(NODE):
             """
             
             dh = jax.grad(H_net, argnums=1)(params, x)
-            J_val = J_net.forward(params['J_net_params'], x)
+            J_val = J_net(params, x)
             R_val = R_net(params, x)
             g_val = g_net(params, x)
 
@@ -247,7 +259,7 @@ class ModularPHNODE(NODE):
         self.H_net_forward = H_net
         self.R_net_forward = jax.vmap(R_net, in_axes=(None, 0))
         self.g_net_forward = jax.vmap(g_net, in_axes=(None, 0))
-        self.J_net_composed_submodels_forward = jax.vmap(J_net_composed_submodels, in_axes=(None, 0))
+        self.J_net_forward = jax.vmap(J_net, in_axes=(None, 0))
         self.get_model_power = jax.vmap(get_model_power, in_axes=(None, 0, 0))
         self.submodel_list = submodel_list
         self.init_params = init_params

@@ -25,6 +25,7 @@ test_dataset = datasets['test_dataset']
 
 def control_policy(state, t, jax_key):
     return jnp.array([jnp.sin(t)])
+    # return None
 
 traj_len = 500
 initial_state = test_dataset['inputs'][0, :]
