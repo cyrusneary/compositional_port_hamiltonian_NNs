@@ -214,7 +214,7 @@ def main():
                     l=1.0,
                     g=9.81,
                     m2=1.0,
-                    random_seed=32,
+                    random_seed=30,
                 )
 
     def control_policy(state, t, jax_key):
@@ -235,8 +235,8 @@ def main():
     save_dir = os.path.abspath(os.path.join(curdir, 'tota_data'))
     t = time.time()
     print('starting simulation')
-    dataset = env.gen_dataset(trajectory_num_steps=100, # 500
-                                num_trajectories=200, # 200 for training, 20 for testing
+    dataset = env.gen_dataset(trajectory_num_steps=500, # 500
+                                num_trajectories=20, # 100 for training, 20 for testing
                                 x0_init_lb=jnp.array([-1.0, -1.0, -1.0, -1.0]),
                                 x0_init_ub=jnp.array([1.0, 1.0, 1.0, 1.0]),
                                 save_str=save_dir,)

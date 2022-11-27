@@ -1,10 +1,10 @@
 experiment_name : 'Vanilla NODE tota system'
 dataset_setup : 
   dataset_type : 'trajectory'
-  train_dataset_file_name : 'tota_training_2022-11-08-18-18-14.pkl'
-  test_dataset_file_name : 'tota_testing_2022-11-08-18-20-40.pkl'
+  train_dataset_file_name : 'training_tota_2022-11-25-17-07-33.pkl' #'tota_training_2022-11-08-18-18-14.pkl'
+  test_dataset_file_name : 'testing_tota_2022-11-25-17-08-01.pkl' # 'tota_testing_2022-11-08-18-20-40.pkl'
   dataset_path : '../environments/tota_data'
-  num_training_trajectories : 200
+  num_training_trajectories : 100
   num_testing_trajectories : 20
 model_setup:
   model_type : 'node'
