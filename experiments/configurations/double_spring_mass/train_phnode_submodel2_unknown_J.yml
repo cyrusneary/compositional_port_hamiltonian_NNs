@@ -34,25 +34,14 @@ model_setup:
       output_dim: 3
       nn_setup_params:
         output_sizes: [32, 32, 3]
-        activation : 'relu'
-  # R_net_setup:
-  #   model_type : 'parametrized_matrix'
-  #   matrix_shape : [2,2]
-  #   parametrized_indeces : [[1,1]]
-  #   mlp_setup_params:
-  #     model_type : 'mlp'
-  #     input_dim : 2
-  #     output_dim: 1
-  #     nn_setup_params:
-  #       output_sizes: [32, 32, 1]
-  #       activation : 'tanh'
+        activation : 'tanh'
   g_net_setup :
     model_type : 'parametrized_constant_matrix'
     matrix_shape : [2,1]
     parametrized_indeces : [[0,0], [1,0]]
 trainer_setup:
   trainer_type: 'node_with_control'
-  num_training_steps: 20000
+  num_training_steps: 50000
   minibatch_size: 32
   loss_setup:
     loss_function_type: 'phnode_with_control_loss' 
