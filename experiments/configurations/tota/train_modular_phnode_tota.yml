@@ -4,7 +4,7 @@ dataset_setup :
   train_dataset_file_name : 'training_tota_2022-11-25-17-07-33.pkl' #'tota_training_2022-11-08-18-18-14.pkl'
   test_dataset_file_name : 'testing_tota_2022-11-25-17-08-01.pkl' # 'tota_testing_2022-11-08-18-20-40.pkl'
   dataset_path : '../environments/tota_data'
-  num_training_trajectories : 200
+  num_training_trajectories : 100
   num_testing_trajectories : 20
 model_setup:
   model_type : 'modular_phnode'
@@ -60,10 +60,10 @@ trainer_setup:
   trainer_type: 'sgd_freeze_params'
   num_training_steps: 100000
   minibatch_size: 32
-  params_to_freeze: []
-  # params_to_freeze : [
-  #   'submodel0_params',
-  # ]
+  # params_to_freeze: []
+  params_to_freeze : [
+    'submodel0_params',
+  ]
   loss_setup:
     loss_function_type: 'compositional_phnode_loss' 
     pen_l2_nn_params: 0.0

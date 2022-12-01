@@ -52,7 +52,7 @@ def config():
 
     # TOTA experiments
     # ex.add_config('configurations/tota/train_phnode_tota.yml')
-    # ex.add_config('configurati/ons/tota/train_node_tota.yml')
+    # ex.add_config('configurations/tota/train_node_tota.yml')
     ex.add_config('configurations/tota/train_modular_phnode_tota.yml')
     
     # ex.add_config('configurations/double_spring_mass/train_modular_phnode_double_spring_mass.yml')

@@ -42,10 +42,10 @@ true_traj, tIndeces, control_inputs = env.gen_trajectory(init_state,
                         trajectory_num_steps=1000,
                         jax_key=subkey)
 
-# submodel1_run_indeces = [862, 863, 864, 865, 866] # known J 100 trajectories
-# submodel2_run_indeces = [887, 888, 889, 890, 891] # known J 100 trajectories
-submodel1_run_indeces = [1516, 1517, 1518, 1519, 1520, 1521, 1522, 1523, 1524, 1525] # unknown J 100 trajectories
-submodel2_run_indeces = [1536, 1537, 1538, 1539, 1540, 1541, 1542, 1543, 1544, 1545] # unknown J 100 trajectories
+submodel1_run_indeces = [862, 863, 864, 865, 866] # known J 100 trajectories
+submodel2_run_indeces = [887, 888, 889, 890, 891] # known J 100 trajectories
+# submodel1_run_indeces = [1516, 1517, 1518, 1519, 1520, 1521, 1522, 1523, 1524, 1525] # unknown J 100 trajectories
+# submodel2_run_indeces = [1536, 1537, 1538, 1539, 1540, 1541, 1542, 1543, 1544, 1545] # unknown J 100 trajectories
 sacred_save_path = os.path.abspath('../experiments/sacred_runs/')
 
 model_setup = {
@@ -110,6 +110,7 @@ predicted_upper = np.percentile(predicted_trajectories, 75, axis=0)
 predicted_median = np.percentile(predicted_trajectories, 50, axis=0)
 
 n = 10
+n_markers = 30
 submodel1Color = 'orange'
 submodel2Color = 'green'
 
@@ -117,6 +118,8 @@ fig = plt.figure(figsize=(7,4))
 ax = fig.add_subplot(111)
 ax.plot(tIndeces[::n], true_traj[:, 0][::n], color='black', linestyle='solid', linewidth=2, label='q1')
 ax.plot(tIndeces[::n], true_traj[:, 1][::n], color='black', linestyle='dashed', linewidth=2, label='p1')
+ax.plot(tIndeces[::n_markers], true_traj[:, 0][::n_markers], 'o', color='black', linewidth=2)
+ax.plot(tIndeces[::n_markers], true_traj[:, 1][::n_markers], 'o', color='black', linewidth=2)
 
 ax.plot(predicted_times[::n], predicted_median[::n, 0], color=submodel1Color, linestyle='solid', linewidth=2, label='q1')
 ax.fill_between(predicted_times[::n], predicted_lower[::n, 0], predicted_upper[::n, 0], color=submodel1Color, alpha=0.2)
@@ -131,6 +134,9 @@ ax.fill_between(predicted_times[::n], predicted_lower[::n, 1], predicted_upper[:
 # ax = fig.add_subplot(212)
 ax.plot(tIndeces[::n], true_traj[:, 2][::n], color='black', linestyle='solid', linewidth=2, label='q2')
 ax.plot(tIndeces[::n], true_traj[:, 3][::n], color='black', linestyle='dashed', linewidth=2, label='p2')
+ax.plot(tIndeces[::n_markers], true_traj[:, 2][::n_markers], 'o', color='black', linewidth=2)
+ax.plot(tIndeces[::n_markers], true_traj[:, 3][::n_markers], 'o', color='black', linewidth=2)
+
 ax.plot(predicted_times[::n], predicted_median[::n, 2], color=submodel2Color, linestyle='solid', linewidth=2, label='q2')
 ax.fill_between(predicted_times[::n], predicted_lower[::n, 2], predicted_upper[::n, 2], color=submodel2Color, alpha=0.2)
 ax.plot(predicted_times[::n], predicted_median[::n, 3], color=submodel2Color, linestyle='dashed', linewidth=2, label='p2')
@@ -149,7 +155,7 @@ ax.set_xlabel('Time $[s]$', fontsize=16)
 ax.grid()
 ax.legend()
 
-plt.show()
+# plt.show()
 
-# import tikzplotlib
-# tikzplotlib.save("compositional_phnode_predicted_trajectory_unknown_J.tex")
+import tikzplotlib
+tikzplotlib.save("compositional_phnode_predicted_trajectory_unknown_J_with_markers.tex")

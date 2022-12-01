@@ -210,11 +210,11 @@ def main():
     env = TOTA(dt=0.01, 
                     m1=1.0, 
                     k=1.2,#k=1.5, 
-                    b=1.7,
+                    b=1.7, #1.7
                     l=1.0,
                     g=9.81,
                     m2=1.0,
-                    random_seed=30,
+                    random_seed=32,
                 )
 
     def control_policy(state, t, jax_key):
