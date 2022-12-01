@@ -243,7 +243,7 @@ class MassSpring(Environment):
 def main():
     env = MassSpring(dt=0.01, 
                     m=1.0, 
-                    k=1.0,#k=1.5, 
+                    k=1.5,#k=1.5, 
                     b=1.5,#b=1.5, 
                     random_seed=32, 
                     nonlinear_damping=True,
@@ -259,7 +259,7 @@ def main():
 
         # return 5.0 * jax.random.uniform(jax_key, shape=(1,), minval = -1.0, maxval=1.0)
         # return jnp.array([jnp.sin(t)])
-        return jnp.array([0.0])
+        return jnp.array([jnp.sin(t)])
 
     env.set_control_policy(control_policy)
 
